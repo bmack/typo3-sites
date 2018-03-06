@@ -10,7 +10,7 @@ defined('TYPO3_MODE') or die();
         'routeTarget' => \TYPO3\CMS\Sites\Controller\SiteConfigurationController::class . '::handleRequest',
         'access' => 'admin',
         'name' => 'site_configuration',
-        'iconIdentifier' => 'fa-map-signs',
+        'icon' => 'EXT:sites/Resources/Public/Icons/module-sites.svg',
         'labels' => 'LLL:EXT:sites/Resources/Private/Language/locallang_module_siteconfiguration.xlf'
     ]
 );
