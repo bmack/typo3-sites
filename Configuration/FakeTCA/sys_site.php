@@ -27,7 +27,7 @@ return [
                 'eval' => 'required,unique,lower,trim',
             ]
         ],
-        'rootpageid' => [
+        'rootPageId' => [
             'label' => 'Root Page ID (You must create a page with a site root flag)',
             'config' => [
                 'type' => 'select',
@@ -36,7 +36,7 @@ return [
                 ],
                 'renderType' => 'selectSingle',
                 'foreign_table' => 'pages',
-                'foreign_table_where' => ' AND (is_siteroot=1 OR (pid=0 AND doktype IN (1,6,7))) ORDER BY pid, sorting',
+                'foreign_table_where' => ' AND (is_siteroot=1 OR (pid=0 AND doktype IN (1,6,7))) AND l10n_parent = 0 ORDER BY pid, sorting',
                 'size' => 1,
                 'min' => 1,
                 'max' => 1,
@@ -64,7 +64,7 @@ return [
                 'placeholder' => 'French',
             ]
         ],
-        'defaultLanguageLocale' => [
+        'defaultLocale' => [
             'label' => 'Locale (e.g. "fr_FR.UTF-8")',
             'config' => [
                 'type' => 'input',
@@ -72,7 +72,7 @@ return [
                 'placeholder' => 'fr_FR.UTF-8',
             ]
         ],
-        'defaultLanguageFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
+        'defaultFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
         'availableLanguages' => [
             'label' => 'Available Languages for this site',
             'config' => [
@@ -82,17 +82,25 @@ return [
                 'foreign_selector' => 'language',
                 'foreign_unique' => 'language',
             ]
+        ],
+        'errorHandling' => [
+            'label' => 'Error Handling',
+            'config' => [
+                'type' => 'inline',
+                'foreign_table' => 'sys_site_errorhandling',
+                'foreign_table_field' => 'error_handling',
+            ]
         ]
     ],
     'types' => [
         '0' => [
-            'showitem' => '--div--;General, identifier, rootpageid, base, --div--;Language=0 Definition, --palette--;;language, --div--;Available Languages, available_languages',
+            'showitem' => '--div--;General, identifier, rootPageId, base, --div--;Language=0 Definition, --palette--;;language, --div--;Available Languages, availableLanguages, --div--;Error Handling, errorHandling',
         ],
     ],
     'palettes' => [
         'language' => [
             'label' => 'Define Language=0 parameters for this site',
-            'showitem' => 'defaultLanguageLabel,defaultLanguage,--linebreak--,default_locale,--linebreak--,default_flag'
+            'showitem' => 'defaultLanguageLabel,defaultLanguage,--linebreak--,defaultLocale,--linebreak--,defaultFlag'
         ]
     ]
 ];

@@ -6,7 +6,6 @@ return [
         'crdate' => 'createdon',
         'cruser_id' => 'createdby',
         'tstamp' => 'updatedon',
-        'default_sortby' => 'identifier',
         'title' => 'Language Configuration for a Site',
         'typeicon_classes' => [
             'default' => 'mimetypes-x-content-domain'
@@ -44,7 +43,7 @@ return [
                 'type' => 'input'
             ]
         ],
-        'fallbacktype' => [
+        'fallbackType' => [
             'label' => 'Fallback Type',
             'config' => [
                 'type' => 'select',
@@ -61,18 +60,19 @@ return [
                 'type' => 'select',
                 'renderType' => 'selectMultipleSideBySide',
                 'items' => [
-                    ['Default Language', 0]
+                    ['Default Language', 0],
+                    ['No fallback', -1]
                 ],
                 'foreign_table' => 'sys_language',
                 'size' => 5,
                 'min' => 0,
                 'max' => 50,
             ]
-        ]
+        ],
     ],
     'types' => [
         '1' => [
-            'showitem' => 'site, language, base, fallbacktype, fallbacks',
+            'showitem' => 'site, language, base, fallbackType, fallbacks',
         ],
     ],
 ];
