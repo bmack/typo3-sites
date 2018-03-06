@@ -49,6 +49,8 @@ class FakeDatabaseEditRow implements FormDataProviderInterface
         }
         // Fake a pid
         $result['databaseRow']['pid'] = 0;
+        // Set site identifier
+        $result['databaseRow']['identifier'] = $result['customData']['siteIdentifier'];
         return $result;
     }
 }

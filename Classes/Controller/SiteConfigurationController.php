@@ -25,6 +25,7 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Sites\Configuration\SiteService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
@@ -147,6 +148,7 @@ class SiteConfigurationController
                 'returnUrl' => $returnUrl,
                 'customData' => [
                     'siteData' => $allSiteConfiguration[$siteIdentifier],
+                    'siteIdentifier' => $siteIdentifier,
                 ],
             ];
             $formData = $formDataCompiler->compile($formDataCompilerInput);
@@ -162,6 +164,40 @@ class SiteConfigurationController
         } else {
             // ?
         }
+    }
+
+    /**
+     * Save incoming data from editAction and redirect to overview or edit
+     *
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    protected function saveAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
+        $parsedBody = $request->getParsedBody();
+        if (isset($parsedBody['closeDoc']) && (int)$parsedBody['closeDoc'] === 1) {
+            // Closing means no save, just redirect to overview
+            return new RedirectResponse($overviewRoute);
+        }
+        $isSave = $parsedBody['_savedok'] ?? false;
+        $isSaveClose = $parsedBody['_saveandclosedok'] ?? false;
+        if (!$isSave && !$isSaveClose) {
+            throw new \RuntimeException('Either save or save and close', 1520370364);
+        }
+
+        // @todo throw if identifier not set?
+        // @todo Store data here
+
+        // @todo ugly
+        $siteIdentifier = $parsedBody['data']['sys_site']['0']['identifier'] ?? null;
+        $saveRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'edit', 'site' => $siteIdentifier]);
+
+        if ($isSave) {
+            return new RedirectResponse($saveRoute);
+        }
+        return new RedirectResponse($overviewRoute);
     }
 
     /**
