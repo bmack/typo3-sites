@@ -1,0 +1,34 @@
+{
+	"name": "bmack/sites",
+	"type": "typo3-cms-framework",
+	"description": "Configure Sites",
+	"license": ["GPL-2.0+"],
+	"authors": [
+		{
+			"name": "Benni Mack",
+			"email": "typo3@b13.de",
+			"role": "Maintainer"
+		}
+	],
+	"require": {
+		"typo3/cms-core": ">=8.7.0 <=9.9.99"
+	},
+	"replace": {
+		"sites": "*"
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "sites"
+		}
+	},
+	"autoload": {
+		"psr-4": {
+			"Bmack\\Sites\\": "Classes/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Bmack\\Sites\\Tests\\": "Tests/"
+		}
+	}
+}
