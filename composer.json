@@ -1,6 +1,6 @@
 {
 	"name": "bmack/sites",
-	"type": "typo3-cms-framework",
+	"type": "typo3-cms-extension",
 	"description": "Configure Sites",
 	"license": ["GPL-2.0+"],
 	"authors": [
@@ -23,12 +23,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Bmack\\Sites\\": "Classes/"
+			"TYPO3\\CMS\\Sites\\": "Classes/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Bmack\\Sites\\Tests\\": "Tests/"
+			"TYPO3\\CMS\\Sites\\Tests\\": "Tests/"
 		}
 	}
 }
