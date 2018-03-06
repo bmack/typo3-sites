@@ -17,6 +17,10 @@ namespace TYPO3\CMS\Sites\Controller;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Form\FormDataCompiler;
+use TYPO3\CMS\Backend\Form\FormResultCompiler;
+use TYPO3\CMS\Backend\Form\NodeFactory;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -29,6 +33,7 @@ use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
+use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
@@ -127,7 +132,31 @@ class SiteConfigurationController
             if (!isset($allSiteConfiguration[$siteIdentifier])) {
                 // throw an error;
             }
-            $existingConfiguration = $allSiteConfiguration[$siteIdentifier];
+
+            $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+            $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+            $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
+            $formDataCompilerInput = [
+                'tableName' => 'sys_site',
+                'vanillaUid' => 42, // @todo dummy for now, unsure what to put in, we have a string identifier
+                'command' => 'edit',
+                'returnUrl' => $uriBuilder->buildUriFromRoute('site_configuration'),
+                'customData' => [
+                    'siteData' => $allSiteConfiguration[$siteIdentifier],
+                ],
+            ];
+            $formData = $formDataCompiler->compile($formDataCompilerInput);
+            $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
+            $formData['renderType'] = 'outerWrapContainer';
+            $formResult = $nodeFactory->create($formData)->render();
+            $this->view->assign('formEngineHtml', $formResult['html']);
+            /**
+            $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
+            $body = $this->formResultCompiler->addCssFiles();
+            $body .= $this->compileForm($editForm);
+            $body .= $this->formResultCompiler->printNeededJSFunctions();
+             */
+
         }
     }
 
