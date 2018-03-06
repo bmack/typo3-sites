@@ -1,0 +1,12 @@
+site:
+  rootpageId: 269
+  base: https://mydomain.com/
+  defaultLanguage: de
+  defaultLanguageLabel: German
+  defaultLanguageFlag: de
+  defaultLanguageLocale: de_DE
+  available_languages:
+    - language: 1
+      base: https://mydomain.fr/
+      fallbacktype: strict
+      fallbacks: 3,4,5
