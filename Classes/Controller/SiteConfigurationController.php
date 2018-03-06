@@ -104,7 +104,7 @@ class SiteConfigurationController
      */
     protected function overviewAction()
     {
-        $this->getButtons();
+        $this->configureOverViewDocHeader();
         $unmappedSiteConfiguration = [];
         $allSiteConfiguration = GeneralUtility::makeInstance(SiteService::class)->getAllSites();
         $pages = $this->getAllSitePages();
@@ -123,24 +123,28 @@ class SiteConfigurationController
 
     /**
      * Shows a form to create a new site configuration, or edit an existing one.
+     *
+     * @param $request ServerRequestInterface
      */
     protected function editAction(ServerRequestInterface $request)
     {
+        $this->configureEditViewDocHeader();
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
         if ($siteIdentifier) {
             $allSiteConfiguration = GeneralUtility::makeInstance(SiteService::class)->getAllSites();
             if (!isset($allSiteConfiguration[$siteIdentifier])) {
-                // throw an error;
+                // @todo throw an error;
             }
 
             $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+            $returnUrl = $uriBuilder->buildUriFromRoute('site_configuration');
             $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
             $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
             $formDataCompilerInput = [
                 'tableName' => 'sys_site',
-                'vanillaUid' => 42, // @todo dummy for now, unsure what to put in, we have a string identifier
+                'vanillaUid' => 42, // @todo dummy for now, string identifier not good for mamuschka
                 'command' => 'edit',
-                'returnUrl' => $uriBuilder->buildUriFromRoute('site_configuration'),
+                'returnUrl' => $returnUrl,
                 'customData' => [
                     'siteData' => $allSiteConfiguration[$siteIdentifier],
                 ],
@@ -149,55 +153,68 @@ class SiteConfigurationController
             $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
             $formData['renderType'] = 'outerWrapContainer';
             $formResult = $nodeFactory->create($formData)->render();
-            $this->view->assign('formEngineHtml', $formResult['html']);
-            /**
             $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
-            $body = $this->formResultCompiler->addCssFiles();
-            $body .= $this->compileForm($editForm);
-            $body .= $this->formResultCompiler->printNeededJSFunctions();
-             */
-
+            $formResultCompiler->mergeResult($formResult);
+            $formResultCompiler->addCssFiles();
+            $this->view->assign('returnUrl', $returnUrl);
+            $this->view->assign('formEngineHtml', $formResult['html']);
+            $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
+        } else {
+            // ?
         }
     }
 
     /**
-     * Create document header buttons
+     * Create document header buttons of "edit" action
      */
-    protected function getButtons()
+    protected function configureEditViewDocHeader(): void
+    {
+        $iconFactory = $this->moduleTemplate->getIconFactory();
+        $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
+        $lang = $this->getLanguageService();
+        $closeButton = $buttonBar->makeLinkButton()
+            ->setHref('#')
+            ->setClasses('t3js-editform-close')
+            ->setTitle($lang->sL('LLL:EXT:lang/Resources/Private/Language/locallang_core.xlf:rm.closeDoc'))
+            ->setIcon($iconFactory->getIcon('actions-close', Icon::SIZE_SMALL));
+        $saveButton = $buttonBar->makeInputButton()
+            ->setTitle($lang->sL('LLL:EXT:lang/Resources/Private/Language/locallang_core.xlf:rm.saveDoc'))
+            ->setName('_savedok')
+            ->setValue('1')
+            ->setForm('siteConfigurationController')
+            ->setIcon($iconFactory->getIcon('actions-document-save', Icon::SIZE_SMALL));
+        $saveAndCloseButton = $buttonBar->makeInputButton()
+            ->setName('_saveandclosedok')
+            ->setClasses('t3js-editform-submitButton')
+            ->setValue('1')
+            ->setForm('siteConfigurationController')
+            ->setTitle($lang->sL('LLL:EXT:lang/Resources/Private/Language/locallang_core.xlf:rm.saveCloseDoc'))
+            ->setIcon($iconFactory->getIcon('actions-document-save-close', Icon::SIZE_SMALL));
+        $saveSplitButton = $buttonBar->makeSplitButton();
+        $saveSplitButton->addItem($saveButton, true);
+        $saveSplitButton->addItem($saveAndCloseButton);
+        $buttonBar->addButton($closeButton);
+        $buttonBar->addButton($saveSplitButton, ButtonBar::BUTTON_POSITION_LEFT, 2);
+    }
+
+    /**
+     * Create document header buttons of "overview" action
+     */
+    protected function configureOverViewDocHeader(): void
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
-
-        // Reload
         $reloadButton = $buttonBar->makeLinkButton()
             ->setHref(GeneralUtility::getIndpEnv('REQUEST_URI'))
             ->setTitle($this->getLanguageService()->sL('LLL:EXT:lang/Resources/Private/Language/locallang_core.xlf:labels.reload'))
             ->setIcon($this->iconFactory->getIcon('actions-refresh', Icon::SIZE_SMALL));
         $buttonBar->addButton($reloadButton, ButtonBar::BUTTON_POSITION_RIGHT);
-
-        // Shortcut
-        $mayMakeShortcut = $this->getBackendUser()->mayMakeShortcut();
-        if ($mayMakeShortcut) {
+        if ($this->getBackendUser()->mayMakeShortcut()) {
             $getVars = ['id', 'route'];
             $shortcutButton = $buttonBar->makeShortcutButton()
                 ->setModuleName('site_configuration')
                 ->setGetVariables($getVars);
             $buttonBar->addButton($shortcutButton, ButtonBar::BUTTON_POSITION_RIGHT);
         }
-    }
-    /**
-     * @return LanguageService
-     */
-    protected function getLanguageService(): LanguageService
-    {
-        return $GLOBALS['LANG'];
-    }
-
-    /**
-     * @return BackendUserAuthentication
-     */
-    protected function getBackendUser(): BackendUserAuthentication
-    {
-        return $GLOBALS['BE_USER'];
     }
 
     /**
@@ -227,5 +244,21 @@ class SiteConfigurationController
             $pages[(int)$row['uid']] = $row;
         }
         return $pages;
+    }
+
+    /**
+     * @return LanguageService
+     */
+    protected function getLanguageService(): LanguageService
+    {
+        return $GLOBALS['LANG'];
+    }
+
+    /**
+     * @return BackendUserAuthentication
+     */
+    protected function getBackendUser(): BackendUserAuthentication
+    {
+        return $GLOBALS['BE_USER'];
     }
 }

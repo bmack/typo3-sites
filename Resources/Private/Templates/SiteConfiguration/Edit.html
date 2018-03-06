@@ -1,1 +1,16 @@
-{formEngineHtml -> f:format.raw()}
+<form
+    action="{f:be.link(route:'site_configuration', parameters:{})}"
+    method="post"
+    enctype="multipart/form-data"
+    name="editform"
+    id="siteConfigurationController"
+    onsubmit="TBE_EDITOR.checkAndDoSubmit(1); return false;"
+>
+    {formEngineHtml -> f:format.raw()}
+
+    <input type="hidden" name="returnUrl" value="{returnUrl -> f:format.raw()}" />
+    <input type="hidden" name="closeDoc" value="0" />
+    <input type="hidden" name="doSave" value="0" />
+
+    {formEngineFooter -> f:format.raw()}
+</form>
