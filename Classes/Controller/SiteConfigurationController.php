@@ -20,6 +20,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Form\FormDataCompiler;
 use TYPO3\CMS\Backend\Form\FormResultCompiler;
 use TYPO3\CMS\Backend\Form\NodeFactory;
+use TYPO3\CMS\Backend\Routing\Route;
+use TYPO3\CMS\Backend\Routing\Router;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
@@ -88,6 +90,11 @@ class SiteConfigurationController
         return new HtmlResponse($this->moduleTemplate->renderContent());
     }
 
+    public function foo(ServerRequestInterface $request)
+    {
+        die('bar');
+    }
+
     /**
      * @param string $templateName
      */
@@ -131,13 +138,26 @@ class SiteConfigurationController
     {
         $this->configureEditViewDocHeader();
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
+
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+
+        $route = GeneralUtility::makeInstance(
+            Route::class,
+            '/ajax/siteconfiguration/inline/create',
+            [
+                'target' => SiteConfigurationController::class . '::handleRequest',
+                'ajax' => true,
+            ]
+        );
+        $router = GeneralUtility::makeInstance(Router::class);
+        $router->addRoute('ajax_record_inline_create', $route);
+
         if ($siteIdentifier) {
             $allSiteConfiguration = GeneralUtility::makeInstance(SiteService::class)->getAllSites();
             if (!isset($allSiteConfiguration[$siteIdentifier])) {
                 // @todo throw an error;
             }
 
-            $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
             $returnUrl = $uriBuilder->buildUriFromRoute('site_configuration');
             $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
             $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
