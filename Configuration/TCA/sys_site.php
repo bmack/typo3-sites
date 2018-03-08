@@ -3,19 +3,10 @@
 return [
     'ctrl' => [
         'label' => 'identifier',
-        'crdate' => 'createdon',
-        'cruser_id' => 'createdby',
-        'tstamp' => 'updatedon',
-        'default_sortby' => 'identifier',
         'title' => 'Site Configuration',
         'typeicon_classes' => [
             'default' => 'mimetypes-x-content-domain'
         ],
-        'rootLevel' => 1,
-        'searchFields' => 'identifier'
-    ],
-    'interface' => [
-        'showRecordFieldList' => 'identifier'
     ],
     'columns' => [
         'identifier' => [
