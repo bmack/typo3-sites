@@ -1,0 +1,56 @@
+{
+  "identifier": "main-site",
+  "defaultLanguage": {
+    "label": "English",
+    "iso2LetterCode": "en",
+    "locale": "en_EN.UTF-8"
+  },
+  "rootPage": 88576701,
+  "entryPoint": "http://example.com/",
+  "availableLanguages": [
+    {
+      "language": {
+        "label": "German",
+        "iso2LetterCode": "de",
+        "locale": "de_DE.UTF-8"
+      },
+      "entryPoint": "/de/",
+      "fallbackType": "strict"
+    }, {
+      "language": {
+        "label": "Swiss German",
+        "iso2LetterCode": "ch",
+        "locale": "de_CH.UTF-8"
+      },
+      "entryPoint": "/ch/",
+      "fallbackType": "fallback",
+      "fallbacks": [
+        {
+          "language": {
+            "label": "German",
+            "iso2LetterCode": "de",
+            "locale": "de_DE.UTF-8"
+          },
+          "entryPoint": "/de/",
+          "fallbackType": "strict"
+        }
+      ]
+    }
+  ],
+  "errorHandling": [
+    {
+      "errorCode": "4xx",
+      "errorHandler": {
+        "handler": "fluid",
+        "fluidTemplate": "SITE:4xx.html"
+      }
+    },
+    {
+      "errorCode": "404",
+      "errorHandler": {
+        "handler": "customErrorHandler",
+        "customErrorHandler": "Super\\Class"
+      }
+    }
+  ]
+}

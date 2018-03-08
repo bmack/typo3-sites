@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "language": {
+      "title": "Site Language",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "title": "Language",
+          "$ref": "#/definitions/systemLanguage"
+        },
+        "entryPoint": {
+          "type": "string",
+          "format": "uri-reference",
+          "title": "EntryPoint",
+          "description": "",
+          "default": "",
+          "examples": [
+            "/", "https://example.com/"
+          ]
+        },
+        "fallbackType": {
+          "type": "string",
+          "title": "Fallback Type",
+          "description": "",
+          "default": "strict",
+          "enum": [
+            "strict", "fallback"
+          ]
+        },
+        "fallbacks": {
+          "title": "Fallbacks",
+          "description": "",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/language"
+          }
+        }
+      },
+      "required": [
+        "language", "entryPoint", "fallbackType"
+      ]
+    },
+    "errorHandling": {
+      "title": "Error Handling",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "errorCode": {
+          "type": "string",
+          "title": "Error Code",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["4xx"],
+              "description": "All 4xx errors"
+            }, {
+              "type": "string",
+              "enum": ["404"],
+              "description": "HTTP 404 (Page not found)"
+            }, {
+              "type": "string",
+              "enum": [null],
+              "description": "Any error not defined otherwise"
+            }
+          ],
+          "default": null
+        },
+        "errorHandler": {
+          "oneOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/errorHandler"
+                }, {
+                  "properties": {
+                    "handler": {
+                      "enum": ["fluid"]
+                    }
+                  },
+                  "required": [
+                    "handler", "fluidTemplate"
+                  ]
+                }
+              ]
+            }, {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/errorHandler"
+                }, {
+                  "properties": {
+                    "handler": {
+                      "enum": ["contentFromPid"]
+                    }
+                  },
+                  "required": [
+                    "handler", "contentSource"
+                  ]
+                }
+              ]
+            }, {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/errorHandler"
+                }, {
+                  "properties": {
+                    "handler": {
+                      "enum": ["customErrorHandler"]
+                    }
+                  },
+                  "required": [
+                    "handler", "customErrorHandler"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "errorCode"
+      ]
+    },
+    "errorHandler": {
+      "title": "Error Handler",
+      "type": "object",
+      "additionalProperties": false,
+      "description": "",
+      "properties": {
+        "handler": {
+          "type": "string",
+          "title": "Handler",
+          "enum": [
+            "defaultErrorHandler", "fluid", "contentFromPid", "customErrorHandler"
+          ],
+          "default": "defaultErrorHandler"
+        },
+        "fluidTemplate": {
+          "title": "Fluid Template",
+          "description": "(use SITES:syntax if you like)",
+          "type": "string"
+        },
+        "contentSource": {
+          "title": "Show content from page",
+          "description": "",
+          "type": "string",
+          "format": "uri",
+          "pattern": "^t3://"
+        },
+        "customErrorHandler": {
+          "title": "ErrorHandler Class Target (FQCN)",
+          "description": "",
+          "type": "string",
+          "pattern": ""
+        }
+      }
+    },
+    "rootPage": {
+      "title": "TYPO3 Root Page (is_siteroot)",
+      "type": "integer",
+      "minimum": 1
+    },
+    "systemLanguage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iso2LetterCode": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string",
+          "pattern": "^[a-z]{2}$"
+        }
+      },
+      "required": [
+        "label", "iso2LetterCode", "locale"
+      ]
+    }
+  },
+  "title": "Site",
+  "description": "",
+  "properties": {
+    "identifier": {
+      "title": "Identifier",
+      "description": "",
+      "type": "string",
+      "pattern": "^[a-z0-9-_]+$"
+    },
+    "rootPage": {
+      "title": "Root Page Id",
+      "description": "",
+      "$ref": "#/definitions/rootPage"
+    },
+    "entryPoint": {
+      "type": "string",
+      "format": "uri-reference",
+      "title": "EntryPoint",
+      "description": "",
+      "default": "",
+      "examples": [
+        "/", "https://example.com/"
+      ]
+    },
+    "defaultLanguage": {
+      "title": "Definition of default language",
+      "description": "",
+      "$ref": "#/definitions/systemLanguage"
+    },
+    "availableLanguages": {
+      "type": "array",
+      "title": "Languages / Translations",
+      "uniqueItems": true,
+      "description": "",
+      "items": {
+        "$ref": "#/definitions/language"
+      }
+    },
+    "errorHandling": {
+      "title": "Definition of error Handling",
+      "description": "",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/definitions/errorHandling"
+      }
+    }
+  },
+  "required": [
+    "identifier", "defaultLanguage", "rootPage", "entryPoint", "errorHandling"
+  ]
+}
