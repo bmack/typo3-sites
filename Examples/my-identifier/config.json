@@ -25,15 +25,7 @@
       "entryPoint": "/ch/",
       "fallbackType": "fallback",
       "fallbacks": [
-        {
-          "language": {
-            "label": "German",
-            "iso2LetterCode": "de",
-            "locale": "de_DE.UTF-8"
-          },
-          "entryPoint": "/de/",
-          "fallbackType": "strict"
-        }
+        "/availableLanguages/0"
       ]
     }
   ],
@@ -44,8 +36,7 @@
         "handler": "fluid",
         "fluidTemplate": "SITE:4xx.html"
       }
-    },
-    {
+    }, {
       "errorCode": "404",
       "errorHandler": {
         "handler": "customErrorHandler",
