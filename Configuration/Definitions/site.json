@@ -35,7 +35,14 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "$ref": "#/definitions/language"
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "json-pointer"
+              }, {
+                "$ref": "#/properties/availableLanguages/items"
+              }
+            ]
           }
         }
       },
