@@ -16,7 +16,8 @@
       },
       "entryPoint": "/de/",
       "fallbackType": "strict"
-    }, {
+    },
+    {
       "language": {
         "label": "Swiss German",
         "iso2LetterCode": "ch",

@@ -11,7 +11,8 @@
 		}
 	],
 	"require": {
-		"typo3/cms-core": ">=8.7.0 <=9.9.99"
+		"typo3/cms-core": ">=8.7.0 <=9.9.99",
+		"justinrainbow/json-schema": "^5.2"
 	},
 	"replace": {
 		"sites": "*"

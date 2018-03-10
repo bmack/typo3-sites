@@ -40,7 +40,7 @@
                 "type": "string",
                 "format": "json-pointer"
               }, {
-                "$ref": "#/properties/availableLanguages/items"
+                "$ref": "#/properties/availableLanguages"
               }
             ]
           }
@@ -58,22 +58,9 @@
         "errorCode": {
           "type": "string",
           "title": "Error Code",
-          "oneOf": [
-            {
-              "type": "string",
-              "enum": ["4xx"],
-              "description": "All 4xx errors"
-            }, {
-              "type": "string",
-              "enum": ["404"],
-              "description": "HTTP 404 (Page not found)"
-            }, {
-              "type": "string",
-              "enum": [null],
-              "description": "Any error not defined otherwise"
-            }
-          ],
-          "default": null
+          "enum": [
+            "4xx", "404"
+          ]
         },
         "errorHandler": {
           "oneOf": [
@@ -125,10 +112,7 @@
             }
           ]
         }
-      },
-      "required": [
-        "errorCode"
-      ]
+      }
     },
     "errorHandler": {
       "title": "Error Handler",
@@ -178,12 +162,15 @@
           "pattern": "^[a-z]{2}$"
         },
         "label": {
+          "title": "Label",
           "type": "string"
         },
         "locale": {
+          "title": "Locale",
           "type": "string"
         },
         "flag": {
+          "title": "Flag",
           "type": "string",
           "pattern": "^[a-z]{2}$"
         }
