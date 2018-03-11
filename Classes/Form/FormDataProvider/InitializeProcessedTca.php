@@ -33,7 +33,7 @@ class InitializeProcessedTca implements FormDataProviderInterface
     public function addData(array $result)
     {
         if (empty($result['processedTca'])) {
-            $fakeTca = require ExtensionManagementUtility::extPath('sites') . 'Configuration/FakeTCA/sys_site.php';
+            $fakeTca = require ExtensionManagementUtility::extPath('sites') . 'Configuration/SiteConfigurationTCA/sys_site.php';
             $result['processedTca'] = $fakeTca;
         }
         if (!is_array($result['processedTca']['columns'])) {
