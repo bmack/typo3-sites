@@ -24,27 +24,25 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class SiteConfiguration
 {
-    protected $sites = [];
-
     /**
-     * @todo should be an opbject
      * @return array
      */
     public function getAllSites(): array
     {
-        $this->resolveAllExistingConfigurations();
-        return $this->sites;
+        return $this->resolveAllExistingConfigurations();
     }
 
-    protected function resolveAllExistingConfigurations()
+    protected function resolveAllExistingConfigurations(): array
     {
+        $sites = [];
         $finder = new Finder();
         $finder->files()->depth(0)->name('config.yaml')->in(PATH_typo3conf . 'sites/*');
         $loader = GeneralUtility::makeInstance(YamlFileLoader::class);
         foreach ($finder as $fileInfo) {
             $configuration = $loader->load((string)$fileInfo);
             $identifier = basename($fileInfo->getPath());
-            $this->sites[$identifier] = $configuration['site'];
+            $sites[$identifier] = $configuration['site'];
         }
+        return $sites;
     }
 }
