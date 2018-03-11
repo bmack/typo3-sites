@@ -6,9 +6,14 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "language": {
+        "sys_language": {
           "title": "Language",
-          "$ref": "#/definitions/systemLanguage"
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {"$ref": "#/definitions/sys_language"}
+          ]
         },
         "entryPoint": {
           "type": "string",
@@ -43,7 +48,10 @@
                 "$ref": "#/properties/availableLanguages"
               }
             ]
-          }
+          },
+          "examples": [
+            "#/availableLanguages/0"
+          ]
         }
       },
       "required": [
@@ -153,7 +161,7 @@
       "type": "integer",
       "minimum": 1
     },
-    "systemLanguage": {
+    "sys_language": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -207,7 +215,7 @@
     "defaultLanguage": {
       "title": "Definition of default language",
       "description": "",
-      "$ref": "#/definitions/systemLanguage"
+      "$ref": "#/definitions/sys_language"
     },
     "availableLanguages": {
       "type": "array",

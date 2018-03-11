@@ -17,5 +17,6 @@ class SchemaToTcaTest extends TestCase
     {
         $foo = new SchemaFileToTca();
         $result = $foo->convert();
+        @file_put_contents(__DIR__ . '/Result.php', "<?php \r\n return "  . var_export($result, true) . ';');
     }
 }

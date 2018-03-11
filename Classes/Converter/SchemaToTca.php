@@ -13,10 +13,6 @@ class SchemaToTca
         'errorHandling'
     ];
 
-    private $simpleTypes = [
-        'string', 'array'
-    ];
-
     public function convertRootSchema(\stdClass $schema, string $entityName): array
     {
         $tca = [];
@@ -35,9 +31,7 @@ class SchemaToTca
         $simpleTypeConverter = new SimpleTypeConverter();
         $tca = [];
         foreach ($schema->properties ?? [] as $name => $property) {
-            if (in_array($property->type, $this->simpleTypes, true)) {
-                $tca[$name] = $simpleTypeConverter->convert($property);
-            }
+            $tca[$name] = $simpleTypeConverter->convert($property);
             if ($property->{'$ref'}) {
                 // recursion
                 $converter = new SchemaFileToTca($property->{'$ref'}, $name);

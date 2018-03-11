@@ -13,6 +13,9 @@ class SchemaUtility
 
     public static function convertRefToEntityName(string $name): string
     {
+        if (strpos($name, '/definitions') !== false) {
+            return self::convertDefinitionNameToEntityName($name);
+        }
         $refResolver = new SchemaStorage(new UriRetriever(), new UriResolver());
         $resolved = $refResolver->resolveRef($name);
         return self::convertDefinitionNameToEntityName($resolved->items->{'$ref'});
@@ -20,7 +23,7 @@ class SchemaUtility
 
     public static function convertDefinitionNameToEntityName(string $referencedName): string
     {
-        $matchCount = preg_match('/.*\#\/definitions\/([[:alnum:]]+)$/', $referencedName, $matches);
+        $matchCount = preg_match('/.*\#\/definitions\/([[:alnum:]_-]+)$/', $referencedName, $matches);
         if ($matchCount === 1) {
             $reference = $matches[1];
         }

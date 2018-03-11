@@ -8,16 +8,12 @@ use TYPO3\CMS\Sites\Converter\Type\SimpleTypeConverter;
 
 class SimpleTypeConverterTest extends TestCase
 {
-    public function setUp()
-    {
-
-    }
 
     /**
      * @test
      * @return void
      */
-    public function simpleSelectFromStringEnum()
+    public function simpleSelectFromStringEnum(): void
     {
         $json = '{
           "type": "string",
@@ -53,7 +49,7 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertUriReferenceFields()
+    public function convertUriReferenceFields(): void
     {
         $json = '{
           "type":"string",
@@ -71,6 +67,8 @@ class SimpleTypeConverterTest extends TestCase
             'config' => [
                 'type' => 'input',
                 'renderType' => 'inputLink',
+                'placeholder' => '/',
+                'size' => 20
             ],
         ];
 
@@ -84,7 +82,7 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertSimpleStringFields()
+    public function convertSimpleStringFields(): void
     {
         $json = '{"title":"Fluid Template","description":"(use SITES:syntax if you like)","type":"string"}';
         $dummy = \json_decode($json);
@@ -106,7 +104,68 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertUriReferencePagesOnly()
+    public function convertExamplesToPlaceholder(): void
+    {
+        $json = '{"title":"Fluid Template","description":"(use SITES:syntax if you like)","type":"string", "examples":["foo", "SITES:main-site/1234"]}';
+        $dummy = \json_decode($json);
+
+        $expectedTca = [
+            'label' => 'Fluid Template',
+            'config' => [
+                'type' => 'input',
+                'placeholder' => 'foo',
+                'size' => '20'
+            ],
+        ];
+
+        $stringConverter = new SimpleTypeConverter();
+        $result = $stringConverter->convert($dummy);
+
+        self::assertEquals($expectedTca, $result);
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function convertReferencesToSingleSelect(): void
+    {
+        $json = '
+        {
+          "title": "Language",
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {"$ref": "file:\/\/D:\\\CoreDev\\\Extensions\\\typo3-sites\/Configuration\/Definitions\/site.json#\/definitions/sys_language"}
+          ]
+        }
+        ';
+        $dummy = \json_decode($json);
+
+        $expectedTca = [
+            'label' => 'Language',
+            'config' => [
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'foreign_table' => 'sys_language',
+                'size' => 1,
+                'min' => 1,
+                'max' => 1
+            ],
+        ];
+
+        $stringConverter = new SimpleTypeConverter();
+        $result = $stringConverter->convert($dummy);
+
+        self::assertEquals($expectedTca, $result);
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function convertUriReferencePagesOnly(): void
     {
         $json = '{
           "title": "Show content from page",
@@ -143,7 +202,7 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertWithEval()
+    public function convertWithEval(): void
     {
         $json = '{
           "title": "Site Identifier",
@@ -171,7 +230,40 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertSetsDefault()
+    public function convertWithSizeFromExamples(): void
+    {
+        $json = '{
+          "title": "Site Identifier",
+          "description": "",
+          "type": "string",
+          "pattern": "^[a-z0-9-_]+$",
+          "examples": [
+            "main-site", "my-super-project_landingpage-super8"
+          ]
+        }';
+        $dummy = \json_decode($json);
+
+        $expectedTca = [
+            'label' => 'Site Identifier',
+            'config' => [
+                'type' => 'input',
+                'placeholder' => 'main-site',
+                'eval' => 'nospace,lower,trim',
+                'size' => 35
+            ],
+        ];
+
+        $stringConverter = new SimpleTypeConverter();
+        $result = $stringConverter->convert($dummy);
+
+        self::assertEquals($expectedTca, $result);
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function convertSetsDefault(): void
     {
         $json = '{
           "type": "string",
@@ -194,7 +286,7 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertHandlesArraysWithRefItemsAsInline()
+    public function convertHandlesArraysWithRefItemsAsInline(): void
     {
         $json = '{
             "title": "Error Handling",
@@ -227,7 +319,7 @@ class SimpleTypeConverterTest extends TestCase
      * @test
      * @return void
      */
-    public function convertHandlesArraysWithOneOfItems()
+    public function convertHandlesArraysWithOneOfItems(): void
     {
         $json = '{
             "title": "Fallbacks",
@@ -259,6 +351,6 @@ class SimpleTypeConverterTest extends TestCase
         $stringConverter = new SimpleTypeConverter();
         $result = $stringConverter->convert($dummy);
 
-        self::assertSame($expectedTca, $result);
+        self::assertEquals($expectedTca, $result);
     }
 }

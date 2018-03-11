@@ -26,7 +26,7 @@
       "entryPoint": "/ch/",
       "fallbackType": "fallback",
       "fallbacks": [
-        "/availableLanguages/0"
+        "#/availableLanguages/0"
       ]
     }
   ],

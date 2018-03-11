@@ -37,18 +37,32 @@ class SimpleTypeConverter
         $tca = [];
         $tca['label'] = $schema->title ?? '';
 
-
         // Type Specific
         if (is_array($schema->enum)) {
             $tca['config'] = $this->handleEnum($schema);
         } else if ($schema->type === 'array') {
             $tca['config'] = $this->handleArray($schema);
-        } else {
+        } else if ($schema->type === 'string') {
             $format = ($schema->format ?? '');
             if ($format === 'uri-reference' || $format === 'uri') {
                 $tca['config'] = $this->handleUri($schema);
             }
             $tca['config']['type'] = 'input';
+            if (is_array($schema->examples)) {
+                $tca['config']['placeholder'] = array_shift($schema->examples);
+            }
+            $size = $this->getGuessedSize($schema);
+            if ($size) {
+                $tca['config']['size'] = $size;
+            }
+        } else if (null === $schema->type) {
+            if (is_array($schema->oneOf)) {
+                $tca['config'] = $this->handleReferences($schema->oneOf);
+                $tca['config']['renderType'] = 'selectSingle';
+                $tca['config']['size'] = 1;
+                $tca['config']['min'] = 1;
+                $tca['config']['max'] = 1;
+            }
         }
 
         // Defaults
@@ -56,14 +70,30 @@ class SimpleTypeConverter
             $tca['config']['default'] = $schema->default;
         }
 
-        // Eval
+        // Eval // size guessing
         if ($schema->pattern ?? false) {
             $eval = $this->evalPatternMapping[$schema->pattern] ?? '';
+
             if ($eval !== '') {
                 $tca['config']['eval'] = $eval;
             }
         }
+
         return $tca;
+    }
+
+    private function getGuessedSize($schema): ?int
+    {
+        $size = 0;
+        if (is_array($schema->examples)) {
+            foreach ($schema->examples as $example) {
+                $exampleLength = strlen($example);
+                if ($exampleLength > $size) {
+                    $size = $exampleLength;
+                }
+            }
+        }
+        return $size ?: null;
     }
 
 
@@ -78,7 +108,9 @@ class SimpleTypeConverter
                 $reference
             );
         } else if ($schema->items && $schema->items->oneOf) {
-            $tca = $this->handleReferences($schema);
+            // oneOf references are handled as select
+            $tca = $this->handleReferences($schema->items->oneOf);
+            $tca['renderType'] = 'selectMultipleSideBySide';
         }
         return $tca ?? [];
     }
@@ -93,12 +125,12 @@ class SimpleTypeConverter
         return $tca;
     }
 
-    protected function handleReferences($schema): array
+    protected function handleReferences(array $oneOf): array
     {
         $linkedTable = '';
         $pointer = false;
-        foreach ($schema->items->oneOf as $itemType) {
-            if ($itemType->format === 'json-pointer') {
+        foreach ($oneOf as $itemType) {
+            if ($itemType->format === 'json-pointer' || $itemType->type === 'integer') {
                 $pointer = true;
             } else if ($itemType->{'$ref'}) {
                 $linkedTable = $itemType->{'$ref'};
@@ -106,7 +138,6 @@ class SimpleTypeConverter
         }
         if ($pointer && $linkedTable !== '') {
             $tca['type'] = 'select';
-            $tca['renderType'] = 'selectMultipleSideBySide';
             $tca['foreign_table'] = SchemaUtility::convertRefToEntityName($linkedTable);
         }
         return $tca ?? [];
