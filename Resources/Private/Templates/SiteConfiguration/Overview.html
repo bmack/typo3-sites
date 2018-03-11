@@ -14,10 +14,28 @@
     <tbody>
     <f:for each="{pages}" as="page">
         <tr>
-            <td><a href="#" class="t3js-contextmenutrigger" data-table="pages" data-uid="{page.uid}"><core:iconForRecord table="pages" row="{page}" /></a> {page.rootline} [ID: {page.uid}]</td>
             <td>
-                <f:if condition="{page.siteidentifier}"><f:then><span class="label label-info">{page.siteidentifier}</span></f:then><f:else><span class="label label-danger">No site configuration</span></f:else></f:if></td>
-            <td><f:if condition="{page.siteidentifier}"><f:then><f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteidentifier}">Edit</f:be.link></f:then><f:else><f:be.link route="site_configuration" parameters="{action: 'edit'}">Create Configuration</f:be.link></f:else></f:if></td>
+                <a href="#" class="t3js-contextmenutrigger" data-table="pages" data-uid="{page.uid}"><core:iconForRecord table="pages" row="{page}" /></a> {page.rootline} [ID: {page.uid}]
+            </td>
+            <td>
+                <f:if condition="{page.siteidentifier}">
+                    <f:then>
+                        <span class="label label-info">{page.siteidentifier}</span>
+                    </f:then>
+                    <f:else>
+                        <span class="label label-danger">No site configuration</span></f:else>
+                </f:if>
+            </td>
+            <td>
+                <f:if condition="{page.siteidentifier}">
+                    <f:then>
+                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteidentifier}">Edit</f:be.link>
+                    </f:then>
+                    <f:else>
+                        <f:be.link route="site_configuration" parameters="{action: 'edit'}">Create Configuration</f:be.link>
+                    </f:else>
+                </f:if>
+            </td>
         </tr>
     </f:for>
     </tbody>
