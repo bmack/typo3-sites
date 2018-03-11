@@ -7,7 +7,7 @@ defined('TYPO3_MODE') or die();
     'top',
     '',
     [
-        'routeTarget' => \TYPO3\CMS\Sites\Controller\SiteConfigurationController::class . '::dispatchMainActions',
+        'routeTarget' => \TYPO3\CMS\Sites\Controller\SiteConfigurationController::class . '::handleRequest',
         'access' => 'admin',
         'name' => 'site_configuration',
         'icon' => 'EXT:sites/Resources/Public/Icons/module-sites.svg',
