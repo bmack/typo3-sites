@@ -22,7 +22,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * @todo: is this the right place?
  */
-class SiteService
+class SiteConfiguration
 {
     protected $sites = [];
 

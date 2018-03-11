@@ -27,7 +27,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
-use TYPO3\CMS\Sites\Configuration\SiteService;
+use TYPO3\CMS\Sites\Configuration\SiteConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Imaging\Icon;
@@ -88,7 +88,7 @@ class SiteConfigurationController
     {
         $this->configureOverViewDocHeader();
         $unmappedSiteConfiguration = [];
-        $allSiteConfiguration = GeneralUtility::makeInstance(SiteService::class)->getAllSites();
+        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
         $pages = $this->getAllSitePages();
         foreach ($allSiteConfiguration as $identifier => $siteConfiguration) {
             $rootpageId = (int)$siteConfiguration['rootpageId'];
@@ -113,7 +113,7 @@ class SiteConfigurationController
         $this->configureEditViewDocHeader();
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
         if ($siteIdentifier) {
-            $allSiteConfiguration = GeneralUtility::makeInstance(SiteService::class)->getAllSites();
+            $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
             if (!isset($allSiteConfiguration[$siteIdentifier])) {
                 // @todo throw an error;
             }
