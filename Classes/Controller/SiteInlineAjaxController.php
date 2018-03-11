@@ -30,7 +30,7 @@ use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 /**
  * FormEngine "edit" and "new" site configuration inline ajax related methods
  */
-class FormInlineAjaxController extends AbstractFormEngineAjaxController
+class SiteInlineAjaxController extends AbstractFormEngineAjaxController
 {
     /**
      * Inline "create" new child
