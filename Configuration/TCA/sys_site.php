@@ -7,6 +7,7 @@ return [
         'typeicon_classes' => [
             'default' => 'mimetypes-x-content-domain'
         ],
+        'rootLevel' => 1,
     ],
     'columns' => [
         'identifier' => [
