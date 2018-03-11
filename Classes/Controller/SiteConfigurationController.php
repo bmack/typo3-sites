@@ -31,7 +31,6 @@ use TYPO3\CMS\Sites\Configuration\SiteConfiguration;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Imaging\Icon;
-use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
@@ -146,7 +145,7 @@ class SiteConfigurationController
                   inline.makeAjaxCall = function(method, params, lock, context) {
                     var url = \'\', urlParams = \'\', options = {};
                     if (method && params && params.length && this.lockAjaxMethod(method, lock)) {
-                      url = TYPO3.settings.ajaxUrls[\'record_inline_\' + method];
+                      url = TYPO3.settings.ajaxUrls[\'site_configuration_inline_\' + method];
                       urlParams = \'\';
                       for (var i = 0; i < params.length; i++) {
                         urlParams += \'&ajax[\' + i + \']=\' + encodeURIComponent(params[i]);
