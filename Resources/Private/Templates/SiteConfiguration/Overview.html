@@ -29,10 +29,14 @@
             <td>
                 <f:if condition="{page.siteidentifier}">
                     <f:then>
-                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteidentifier}">Edit</f:be.link>
+                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteidentifier}" title="Edit" class="btn btn-default">
+                            <core:icon identifier="actions-open" />
+                        </f:be.link>
                     </f:then>
                     <f:else>
-                        <f:be.link route="site_configuration" parameters="{action: 'edit'}">Create Configuration</f:be.link>
+                        <f:be.link route="site_configuration" parameters="{action: 'edit'}" title="Create configuration" class="btn btn-default">
+                            <core:icon identifier="actions-add" />
+                        </f:be.link>
                     </f:else>
                 </f:if>
             </td>
