@@ -139,46 +139,9 @@ class SiteConfigurationController
             $formResultCompiler->mergeResult($formResult);
             $formResultCompiler->addCssFiles();
             $formEngineFooter = $formResultCompiler->printNeededJSFunctions();
-            // This hacks overrides "inline.makeAjaxCall()" to re-route inline open/new to this controller
-            $formEngineFooter .= '
-            <script type="text/javascript">
-                  inline.makeAjaxCall = function(method, params, lock, context) {
-                    var url = \'\', urlParams = \'\', options = {};
-                    if (method && params && params.length && this.lockAjaxMethod(method, lock)) {
-                      url = TYPO3.settings.ajaxUrls[\'site_configuration_inline_\' + method];
-                      urlParams = \'\';
-                      for (var i = 0; i < params.length; i++) {
-                        urlParams += \'&ajax[\' + i + \']=\' + encodeURIComponent(params[i]);
-                      }
-                      if (context) {
-                        urlParams += \'&ajax[context]=\' + encodeURIComponent(JSON.stringify(context));
-                      }
-                      options = {
-                        type: \'POST\',
-                        data: urlParams,
-                        success: function(data, message, jqXHR) {
-                          inline.isLoading = false;
-                          inline.processAjaxResponse(method, jqXHR);
-                          if (inline.progress) {
-                            inline.progress.done();
-                          }
-                        },
-                        error: function(jqXHR) {
-                          inline.isLoading = false;
-                          inline.showAjaxFailure(method, jqXHR);
-                          if (inline.progress) {
-                            inline.progress.done();
-                          }
-                        }
-                      };
-                      $.ajax(url, options);
-                    }
-                },
-            </script>
-            ';
             $this->view->assign('returnUrl', $returnUrl);
             $this->view->assign('formEngineHtml', $formResult['html']);
-            $this->view->assign('formEngineFooter', $formEngineFooter);
+            $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
         } else {
             // ?
         }
