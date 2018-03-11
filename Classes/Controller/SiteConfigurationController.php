@@ -25,6 +25,7 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Sites\Configuration\SiteService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -38,7 +39,7 @@ use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
- * Lists all siteroot pages, and allows to configure a configuration for a site.
+ * Lists all site root pages, and allows to configure a configuration for a site.
  */
 class SiteConfigurationController
 {
@@ -55,28 +56,15 @@ class SiteConfigurationController
     protected $view;
 
     /**
-     * @var IconFactory
-     */
-    protected $iconFactory;
-
-    /**
-     * Initializes everything necessary for rendering
-     */
-    public function __construct()
-    {
-        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
-        $this->moduleTemplate->getPageRenderer()->loadRequireJsModule('TYPO3/CMS/Backend/ContextMenu');
-        $this->iconFactory = GeneralUtility::makeInstance(IconFactory::class);
-    }
-
-    /**
      * Injects the request object for the current request, and renders the overview of all sites
      *
      * @param ServerRequestInterface $request the current request
      * @return ResponseInterface the response with the content
      */
-    public function handleRequest(ServerRequestInterface $request): ResponseInterface
+    public function dispatchMainActions(ServerRequestInterface $request): ResponseInterface
     {
+        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
+        $this->moduleTemplate->getPageRenderer()->loadRequireJsModule('TYPO3/CMS/Backend/ContextMenu');
         $action = $request->getQueryParams()['action'] ?? $request->getParsedBody()['action'] ?? 'overview';
         $this->initializeView($action);
 
@@ -88,16 +76,9 @@ class SiteConfigurationController
         return new HtmlResponse($this->moduleTemplate->renderContent());
     }
 
-    /**
-     * @param string $templateName
-     */
-    protected function initializeView(string $templateName)
+    public function newInlineChildAction(ServerRequestInterface $request): ResponseInterface
     {
-        $this->view = GeneralUtility::makeInstance(StandaloneView::class);
-        $this->view->setTemplate($templateName);
-        $this->view->setTemplateRootPaths(['EXT:sites/Resources/Private/Templates/SiteConfiguration']);
-        $this->view->setPartialRootPaths(['EXT:sites/Resources/Private/Partials']);
-        $this->view->setLayoutRootPaths(['EXT:sites/Resources/Private/Layouts']);
+        return new JsonResponse(['success' => true]);
     }
 
     /**
@@ -158,14 +139,51 @@ class SiteConfigurationController
             $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
             $formResultCompiler->mergeResult($formResult);
             $formResultCompiler->addCssFiles();
+            $formEngineFooter = $formResultCompiler->printNeededJSFunctions();
+            // This hacks overrides "inline.makeAjaxCall()" to re-route inline open/new to this controller
+            $formEngineFooter .= '
+            <script type="text/javascript">
+                  inline.makeAjaxCall = function(method, params, lock, context) {
+                    var url = \'\', urlParams = \'\', options = {};
+                    if (method && params && params.length && this.lockAjaxMethod(method, lock)) {
+                      url = TYPO3.settings.ajaxUrls[\'record_inline_\' + method];
+                      urlParams = \'\';
+                      for (var i = 0; i < params.length; i++) {
+                        urlParams += \'&ajax[\' + i + \']=\' + encodeURIComponent(params[i]);
+                      }
+                      if (context) {
+                        urlParams += \'&ajax[context]=\' + encodeURIComponent(JSON.stringify(context));
+                      }
+                      options = {
+                        type: \'POST\',
+                        data: urlParams,
+                        success: function(data, message, jqXHR) {
+                          inline.isLoading = false;
+                          inline.processAjaxResponse(method, jqXHR);
+                          if (inline.progress) {
+                            inline.progress.done();
+                          }
+                        },
+                        error: function(jqXHR) {
+                          inline.isLoading = false;
+                          inline.showAjaxFailure(method, jqXHR);
+                          if (inline.progress) {
+                            inline.progress.done();
+                          }
+                        }
+                      };
+                      $.ajax(url, options);
+                    }
+                },
+            </script>
+            ';
             $this->view->assign('returnUrl', $returnUrl);
             $this->view->assign('formEngineHtml', $formResult['html']);
-            $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
+            $this->view->assign('formEngineFooter', $formEngineFooter);
         } else {
             // ?
         }
     }
-
     /**
      * Save incoming data from editAction and redirect to overview or edit
      *
@@ -199,6 +217,19 @@ class SiteConfigurationController
         }
         return new RedirectResponse($overviewRoute);
     }
+
+    /**
+     * @param string $templateName
+     */
+    protected function initializeView(string $templateName)
+    {
+        $this->view = GeneralUtility::makeInstance(StandaloneView::class);
+        $this->view->setTemplate($templateName);
+        $this->view->setTemplateRootPaths(['EXT:sites/Resources/Private/Templates/SiteConfiguration']);
+        $this->view->setPartialRootPaths(['EXT:sites/Resources/Private/Partials']);
+        $this->view->setLayoutRootPaths(['EXT:sites/Resources/Private/Layouts']);
+    }
+
 
     /**
      * Create document header buttons of "edit" action
@@ -238,11 +269,12 @@ class SiteConfigurationController
      */
     protected function configureOverViewDocHeader(): void
     {
+        $iconFactory = $this->moduleTemplate->getIconFactory();
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
         $reloadButton = $buttonBar->makeLinkButton()
             ->setHref(GeneralUtility::getIndpEnv('REQUEST_URI'))
             ->setTitle($this->getLanguageService()->sL('LLL:EXT:lang/Resources/Private/Language/locallang_core.xlf:labels.reload'))
-            ->setIcon($this->iconFactory->getIcon('actions-refresh', Icon::SIZE_SMALL));
+            ->setIcon($iconFactory->getIcon('actions-refresh', Icon::SIZE_SMALL));
         $buttonBar->addButton($reloadButton, ButtonBar::BUTTON_POSITION_RIGHT);
         if ($this->getBackendUser()->mayMakeShortcut()) {
             $getVars = ['id', 'route'];
