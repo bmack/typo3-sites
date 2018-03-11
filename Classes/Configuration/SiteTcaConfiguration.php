@@ -20,8 +20,8 @@ use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Load Site configuration TCA from Configuration/SiteConfigurationTCA
- * and Configuration/SiteTCA/Overrides
+ * Load Site configuration TCA from ext:*Configuration/SiteConfigurationTCA
+ * and ext:*Configuration/SiteConfigurationTCA/Overrides
  */
 class SiteTcaConfiguration
 {
