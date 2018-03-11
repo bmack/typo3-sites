@@ -60,6 +60,8 @@ return [
                 'type' => 'select',
                 'renderType' => 'selectMultipleSideBySide',
                 'items' => [
+                    ['Default Language', 0],
+                    ['No fallback', -1]
                 ],
                 'foreign_table' => 'sys_language',
                 'size' => 5,
