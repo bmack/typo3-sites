@@ -16,7 +16,8 @@ namespace TYPO3\CMS\Sites\Form\FormDataProvider;
  */
 
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
-use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 
 /**
  * Initialize processed TCA by reading FakeTCA from file
@@ -33,8 +34,8 @@ class InitializeProcessedTca implements FormDataProviderInterface
     public function addData(array $result)
     {
         if (empty($result['processedTca'])) {
-            $fakeTca = require ExtensionManagementUtility::extPath('sites') . 'Configuration/SiteConfigurationTCA/sys_site.php';
-            $result['processedTca'] = $fakeTca;
+            $siteTcaConfiguration = GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca();
+            $result['processedTca'] = $siteTcaConfiguration[$result['tableName']];
         }
         if (!is_array($result['processedTca']['columns'])) {
             throw new \UnexpectedValueException(
