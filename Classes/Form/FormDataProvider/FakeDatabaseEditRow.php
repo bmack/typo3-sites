@@ -44,7 +44,7 @@ class FakeDatabaseEditRow implements FormDataProviderInterface
         foreach ($result['customData']['siteData'] as $fieldName => $value) {
             // Flat values only - databaseRow is has no "tree"
             if (!is_array($value)) {
-                $result['databaseRow'][$fieldName] = $fieldName;
+                $result['databaseRow'][$fieldName] = $value;
             }
         }
         // Fake a pid

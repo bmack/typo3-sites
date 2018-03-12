@@ -84,10 +84,10 @@ class SiteConfigurationController
         $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
         $pages = $this->getAllSitePages();
         foreach ($allSiteConfiguration as $identifier => $siteConfiguration) {
-            $rootpageId = (int)$siteConfiguration['rootpageId'];
-            if (isset($pages[$rootpageId])) {
-                $pages[$rootpageId]['siteidentifier'] = $identifier;
-                $pages[$rootpageId]['siteconfiguration'] = $siteConfiguration;
+            $rootPageId = (int)$siteConfiguration['rootPageId'];
+            if (isset($pages[$rootPageId])) {
+                $pages[$rootPageId]['siteidentifier'] = $identifier;
+                $pages[$rootPageId]['siteconfiguration'] = $siteConfiguration;
             } else {
                 $unmappedSiteConfiguration[$identifier] = $siteConfiguration;
             }

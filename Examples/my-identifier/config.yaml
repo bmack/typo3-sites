@@ -1,5 +1,5 @@
 site:
-  rootpageId: 269
+  rootPageId: 269
   base: https://mydomain.com/
   defaultLanguage: de
   defaultLanguageLabel: German
