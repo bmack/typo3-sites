@@ -3,10 +3,17 @@ site:
   base: https://mydomain.com/
   defaultLanguage: de
   defaultLanguageLabel: German
-  defaultLanguageFlag: de
-  defaultLanguageLocale: de_DE
-  available_languages:
+  defaultFlag: de
+  defaultLocale: de_DE
+  availableLanguages:
     - language: 1
       base: https://mydomain.fr/
-      fallbacktype: strict
+      fallbackType: strict
       fallbacks: 3,4,5
+  errorHandling:
+    - site: 42
+      errorCode: 404
+      errorHandler: ContentFromPid
+      errorFluidTemplate: EXT:foo/Resources/Private/Templates/404.html
+      errorContentSource: 123
+      errorPhpClassFQCN: MyVendor\MyExtension\MyClass::handleFourZeroFour

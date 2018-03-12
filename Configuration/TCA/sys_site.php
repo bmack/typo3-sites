@@ -65,6 +65,7 @@ return [
                 'placeholder' => 'fr_FR.UTF-8',
             ]
         ],
+        // @todo: This global access won't work well depending on TCA load order and overrides
         'defaultFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
         'availableLanguages' => [
             'label' => 'Available Languages for this site',
@@ -81,7 +82,7 @@ return [
             'config' => [
                 'type' => 'inline',
                 'foreign_table' => 'sys_site_errorhandling',
-                'foreign_table_field' => 'error_handling',
+                'foreign_field' => 'site',
             ]
         ]
     ],
