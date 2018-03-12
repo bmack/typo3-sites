@@ -53,16 +53,12 @@ class SiteConfiguration
         $finder->files()->depth(0)->name('config.yaml')->in(PATH_typo3conf . 'sites/*');
         $loader = GeneralUtility::makeInstance(YamlFileLoader::class);
         foreach ($finder as $fileInfo) {
-            $configuration = $loader->load((string)$fileInfo);
+            $configuration = $loader->load(str_replace('\\', '/', (string)$fileInfo));
             // Make sub array count from 1 instead of 0 to have "valid uid's" for inline references
             foreach ($configuration['site'] as $fieldName => $fieldValue) {
                 if (is_array($fieldValue)) {
-                    $newArray = [ 0 => 0 ];
-                    foreach ($fieldValue as $subField) {
-                        $newArray[] = $subField;
-                    }
-                    unset($newArray[0]);
-                    $configuration['site'][$fieldName] = $newArray;
+                    \array_unshift($configuration['site'][$fieldName], [0 => 0]);
+                    unset($configuration['site'][$fieldName][0]);
                 }
             }
             $identifier = basename($fileInfo->getPath());
