@@ -8,4 +8,9 @@ return [
         'path' => '/siteconfiguration/inline/create',
         'target' => SiteInlineAjaxController::class . '::newInlineChildAction'
     ],
+    // Site configuration inline open existing "record" route
+    'site_configuration_inline_details' => [
+        'path' => '/siteconfiguration/inline/details',
+        'target' => SiteInlineAjaxController::class . '::openInlineChildAction'
+    ],
 ];

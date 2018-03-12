@@ -14,5 +14,6 @@
 require(['jquery'], function($) {
 	$(function() {
 		TYPO3.inline.addMethod('create', 'site_configuration_inline_create');
+		TYPO3.inline.addMethod('details', 'site_configuration_inline_details');
 	});
 });

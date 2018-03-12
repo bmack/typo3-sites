@@ -25,6 +25,7 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 
 /**
@@ -32,6 +33,12 @@ use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
  */
 class SiteInlineAjaxController extends AbstractFormEngineAjaxController
 {
+
+    public function __construct()
+    {
+        $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
+    }
+
     /**
      * Inline "create" new child
      *
@@ -150,6 +157,146 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         $jsonArray['scriptCall'][] = 'inline.fadeOutFadeIn(' . GeneralUtility::quoteJSvalue($objectId . '_div') . ');';
 
         return new JsonResponse($jsonArray);
+    }
+
+    /**
+     * Show the details of a child record.
+     *
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    public function openInlineChildAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $ajaxArguments = $request->getParsedBody()['ajax'] ?? $request->getQueryParams()['ajax'];
+
+        $domObjectId = $ajaxArguments[0];
+        $inlineFirstPid = $this->getInlineFirstPidFromDomObjectId($domObjectId);
+        $parentConfig = $this->extractSignedParentConfigFromRequest((string)$ajaxArguments['context']);
+
+        // Parse the DOM identifier, add the levels to the structure stack
+        $inlineStackProcessor = GeneralUtility::makeInstance(InlineStackProcessor::class);
+        $inlineStackProcessor->initializeByParsingDomObjectIdString($domObjectId);
+        $inlineStackProcessor->injectAjaxConfiguration($parentConfig);
+
+        // Parent, this table embeds the child table
+        $parent = $inlineStackProcessor->getStructureLevel(-1);
+        $parentFieldName = $parent['field'];
+
+        // Set flag in config so that only the fields are rendered
+        // @todo: Solve differently / rename / whatever
+        $parentConfig['renderFieldsOnly'] = true;
+
+        $parentData = [
+            'processedTca' => [
+                'columns' => [
+                    $parentFieldName => [
+                        'config' => $parentConfig,
+                    ],
+                ],
+            ],
+            'tableName' => $parent['table'],
+            'inlineFirstPid' => $inlineFirstPid,
+            // Hand over given original return url to compile stack. Needed if inline children compile links to
+            // another view (eg. edit metadata in a nested inline situation like news with inline content element image),
+            // so the back link is still the link from the original request. See issue #82525. This is additionally
+            // given down in TcaInline data provider to compiled children data.
+            'returnUrl' => $parentConfig['originalReturnUrl'],
+        ];
+
+        // Child, a record from this table should be rendered
+        $child = $inlineStackProcessor->getUnstableStructure();
+
+        $childData = $this->compileChild($parentData, $parentFieldName, (int)$child['uid'], $inlineStackProcessor->getStructure());
+
+        $childData['inlineParentUid'] = (int)$parent['uid'];
+        $childData['renderType'] = 'inlineRecordContainer';
+        $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
+        $childResult = $nodeFactory->create($childData)->render();
+
+        $jsonArray = [
+            'data' => '',
+            'stylesheetFiles' => [],
+            'scriptCall' => [],
+        ];
+
+        // The HTML-object-id's prefix of the dynamically created record
+        $objectPrefix = $inlineStackProcessor->getCurrentStructureDomObjectIdPrefix($inlineFirstPid) . '-' . $child['table'];
+        $objectId = $objectPrefix . '-' . (int)$child['uid'];
+        $expandSingle = $parentConfig['appearance']['expandSingle'];
+        $jsonArray['scriptCall'][] = 'inline.domAddRecordDetails(' . GeneralUtility::quoteJSvalue($domObjectId) . ',' . GeneralUtility::quoteJSvalue($objectPrefix) . ',' . ($expandSingle ? '1' : '0') . ',json.data);';
+        if ($parentConfig['foreign_unique']) {
+            $jsonArray['scriptCall'][] = 'inline.removeUsed(' . GeneralUtility::quoteJSvalue($objectPrefix) . ',\'' . (int)$child['uid'] . '\');';
+        }
+        $jsonArray = $this->mergeChildResultIntoJsonResult($jsonArray, $childResult);
+        if ($parentConfig['appearance']['useSortable']) {
+            $inlineObjectName = $inlineStackProcessor->getCurrentStructureDomObjectIdPrefix($inlineFirstPid);
+            $jsonArray['scriptCall'][] = 'inline.createDragAndDropSorting(' . GeneralUtility::quoteJSvalue($inlineObjectName . '_records') . ');';
+        }
+        if (!$parentConfig['appearance']['collapseAll'] && $expandSingle) {
+            $jsonArray['scriptCall'][] = 'inline.collapseAllRecords(' . GeneralUtility::quoteJSvalue($objectId) . ',' . GeneralUtility::quoteJSvalue($objectPrefix) . ',\'' . (int)$child['uid'] . '\');';
+        }
+
+        return new JsonResponse($jsonArray);
+    }
+
+    /**
+     * Compile a full child record
+     *
+     * @param array $parentData Result array of parent
+     * @param string $parentFieldName Name of parent field
+     * @param int $childUid Uid of child to compile
+     * @param array $inlineStructure Current inline structure
+     * @return array Full result array
+     *
+     * @todo: This clones methods compileChild from TcaInline Provider. Find a better abstraction
+     * @todo: to also encapsulate the more complex scenarios with combination child and friends.
+     */
+    protected function compileChild(array $parentData, $parentFieldName, $childUid, array $inlineStructure)
+    {
+        $parentConfig = $parentData['processedTca']['columns'][$parentFieldName]['config'];
+
+        /** @var InlineStackProcessor $inlineStackProcessor */
+        $inlineStackProcessor = GeneralUtility::makeInstance(InlineStackProcessor::class);
+        $inlineStackProcessor->initializeByGivenStructure($inlineStructure);
+        $inlineTopMostParent = $inlineStackProcessor->getStructureLevel(0);
+
+        // @todo: do not use stack processor here ...
+        $child = $inlineStackProcessor->getUnstableStructure();
+        $childTableName = $child['table'];
+
+        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
+        $formDataCompilerInput = [
+            'command' => 'edit',
+            'tableName' => $childTableName,
+            'vanillaUid' => (int)$childUid,
+            'returnUrl' => $parentData['returnUrl'],
+            'isInlineChild' => true,
+            'inlineStructure' => $inlineStructure,
+            'inlineFirstPid' => $parentData['inlineFirstPid'],
+            'inlineParentConfig' => $parentConfig,
+            'isInlineAjaxOpeningContext' => true,
+
+            // values of the current parent element
+            // it is always a string either an id or new...
+            'inlineParentUid' => $parentData['databaseRow']['uid'],
+            'inlineParentTableName' => $parentData['tableName'],
+            'inlineParentFieldName' => $parentFieldName,
+
+            // values of the top most parent element set on first level and not overridden on following levels
+            'inlineTopMostParentUid' => $inlineTopMostParent['uid'],
+            'inlineTopMostParentTableName' => $inlineTopMostParent['table'],
+            'inlineTopMostParentFieldName' => $inlineTopMostParent['field'],
+        ];
+        // For foreign_selector with useCombination $mainChild is the mm record
+        // and $combinationChild is the child-child. For "normal" relations, $mainChild
+        // is just the normal child record and $combinationChild is empty.
+        $mainChild = $formDataCompiler->compile($formDataCompilerInput);
+        if ($parentConfig['foreign_selector'] && $parentConfig['appearance']['useCombination']) {
+            // This kicks in if opening an existing mainChild that has a child-child set
+            $mainChild['combinationChild'] = $this->compileChildChild($mainChild, $parentConfig, $inlineStructure);
+        }
+        return $mainChild;
     }
 
     /**

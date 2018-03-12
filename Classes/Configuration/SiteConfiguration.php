@@ -32,6 +32,20 @@ class SiteConfiguration
         return $this->resolveAllExistingConfigurations();
     }
 
+    public function getByPageUid(int $rootPageId): array
+    {
+        $allSites = $this->resolveAllExistingConfigurations();
+        foreach ($allSites as $site => $siteDetails) {
+            if ($siteDetails['rootPageId'] === $rootPageId) {
+                return $siteDetails;
+            }
+        }
+        throw new \RuntimeException(
+            'No site configuration for root page uid ' . $rootPageId . ' found.',
+            1520884750
+        );
+    }
+
     protected function resolveAllExistingConfigurations(): array
     {
         $sites = [];
@@ -40,6 +54,17 @@ class SiteConfiguration
         $loader = GeneralUtility::makeInstance(YamlFileLoader::class);
         foreach ($finder as $fileInfo) {
             $configuration = $loader->load((string)$fileInfo);
+            // Make sub array count from 1 instead of 0 to have "valid uid's" for inline references
+            foreach ($configuration['site'] as $fieldName => $fieldValue) {
+                if (is_array($fieldValue)) {
+                    $newArray = [ 0 => 0 ];
+                    foreach ($fieldValue as $subField) {
+                        $newArray[] = $subField;
+                    }
+                    unset($newArray[0]);
+                    $configuration['site'][$fieldName] = $newArray;
+                }
+            }
             $identifier = basename($fileInfo->getPath());
             $sites[$identifier] = $configuration['site'];
         }

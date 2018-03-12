@@ -33,6 +33,7 @@ use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
+use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
@@ -103,6 +104,8 @@ class SiteConfigurationController
      */
     protected function editAction(ServerRequestInterface $request)
     {
+        $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
+
         $this->configureEditViewDocHeader();
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
         if ($siteIdentifier) {
@@ -117,11 +120,10 @@ class SiteConfigurationController
             $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
             $formDataCompilerInput = [
                 'tableName' => 'sys_site',
-                'vanillaUid' => 42, // @todo dummy for now, string identifier not good for mamuschka
+                'vanillaUid' => $allSiteConfiguration[$siteIdentifier]['rootPageId'],
                 'command' => 'edit',
                 'returnUrl' => (string)$returnUrl,
                 'customData' => [
-                    'siteData' => $allSiteConfiguration[$siteIdentifier],
                     'siteIdentifier' => $siteIdentifier,
                 ],
             ];
@@ -147,6 +149,9 @@ class SiteConfigurationController
      */
     protected function saveAction(ServerRequestInterface $request): ResponseInterface
     {
+        // needed here?
+        $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
+
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
         $parsedBody = $request->getParsedBody();
