@@ -8,6 +8,7 @@ return [
             'default' => 'mimetypes-x-content-domain'
         ],
         'rootLevel' => 1,
+        'hideTable' => true,
     ],
     'columns' => [
         'identifier' => [

@@ -16,6 +16,7 @@ return [
             'ClassDispatcher' => 'mimetypes-text-php'
         ],
         'rootLevel' => 1,
+        'hideTable' => true,
     ],
     'interface' => [],
     'columns' => [

@@ -24,14 +24,11 @@ $iconRegistry->registerIcon(
 );
 
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['formDataGroup']['siteConfiguration'] = [
-    \TYPO3\CMS\Sites\Form\FormDataProvider\InitializeProcessedTca::class => [
-        'depends' => [
-            \TYPO3\CMS\Backend\Form\FormDataProvider\ReturnUrl::class,
-        ],
+    \TYPO3\CMS\Backend\Form\FormDataProvider\InitializeProcessedTca::class => [
     ],
     \TYPO3\CMS\Sites\Form\FormDataProvider\FakeDatabaseEditRow::class => [
         'depends' => [
-            \TYPO3\CMS\Sites\Form\FormDataProvider\InitializeProcessedTca::class,
+            \TYPO3\CMS\Backend\Form\FormDataProvider\InitializeProcessedTca::class,
         ]
     ],
     \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseParentPageRow::class => [

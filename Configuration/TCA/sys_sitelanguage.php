@@ -11,6 +11,7 @@ return [
             'default' => 'mimetypes-x-content-domain'
         ],
         'rootLevel' => 1,
+        'hideTable' => true,
         'searchFields' => 'identifier'
     ],
     'interface' => [

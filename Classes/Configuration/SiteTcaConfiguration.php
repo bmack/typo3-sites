@@ -22,6 +22,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * Load Site configuration TCA from ext:*Configuration/SiteConfigurationTCA
  * and ext:*Configuration/SiteConfigurationTCA/Overrides
+ *
+ * @todo: Unused for now - we put that TCA into global scope at the moment
  */
 class SiteTcaConfiguration
 {

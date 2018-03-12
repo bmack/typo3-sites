@@ -21,6 +21,8 @@ use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 
 /**
  * Initialize processed TCA by reading FakeTCA from file
+ *
+ * @todo: Unused for now - we put that TCA into global scope at the moment
  */
 class InitializeProcessedTca implements FormDataProviderInterface
 {
