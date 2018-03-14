@@ -17,6 +17,7 @@ namespace TYPO3\CMS\Sites\Controller;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Symfony\Component\Yaml\Yaml;
 use TYPO3\CMS\Backend\Form\FormDataCompiler;
 use TYPO3\CMS\Backend\Form\FormResultCompiler;
 use TYPO3\CMS\Backend\Form\NodeFactory;
@@ -35,6 +36,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
+use TYPO3\CMS\Sites\SiteConfigurationNotFoundException;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
@@ -84,13 +86,15 @@ class SiteConfigurationController
         $unmappedSiteConfiguration = [];
         $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
         $pages = $this->getAllSitePages();
-        foreach ($allSiteConfiguration as $identifier => $siteConfiguration) {
+        foreach ($allSiteConfiguration as $siteIdentifier => $siteConfiguration) {
             $rootPageId = (int)$siteConfiguration['rootPageId'];
             if (isset($pages[$rootPageId])) {
-                $pages[$rootPageId]['siteidentifier'] = $identifier;
-                $pages[$rootPageId]['siteconfiguration'] = $siteConfiguration;
+                $pages[$rootPageId]['siteIdentifier'] = $siteIdentifier;
+                // @todo unused in view
+                $pages[$rootPageId]['siteConfiguration'] = $siteConfiguration;
             } else {
-                $unmappedSiteConfiguration[$identifier] = $siteConfiguration;
+                // @todo unused in view
+                $unmappedSiteConfiguration[$siteIdentifier] = $siteConfiguration;
             }
         }
         $this->view->assign('unmappedSiteConfiguration', $unmappedSiteConfiguration);
@@ -149,10 +153,10 @@ class SiteConfigurationController
      */
     protected function saveAction(ServerRequestInterface $request): ResponseInterface
     {
-        // needed here?
-        $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
-
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $siteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class);
+        $siteTca = GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca();
+
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
         $parsedBody = $request->getParsedBody();
         if (isset($parsedBody['closeDoc']) && (int)$parsedBody['closeDoc'] === 1) {
@@ -168,8 +172,49 @@ class SiteConfigurationController
         // @todo throw if identifier not set?
         // @todo Store data here
 
+        if (!isset($parsedBody['data']['sys_site']) || !is_array($parsedBody['data']['sys_site'])
+        ) {
+            throw new \RuntimeException('Not sys_site data or sys_site identifier given', 1521030950);
+        }
+        $data = $parsedBody['data'];
+        $pageId = (int)key($data['sys_site']);
+        $sysSiteRow = current($data['sys_site']);
+        $siteIdentifier = $sysSiteRow['identifier'] ?? null;
+
+
+        $sysSiteTca = $siteTca['sys_site'];
+        $newSysSiteData = [];
+        foreach ($sysSiteRow as $fieldName => $fieldValue) {
+            $type = $sysSiteTca['columns'][$fieldName]['config']['type'];
+            if ($type === 'input') {
+                $newSysSiteData['site'][$fieldName] = $fieldValue;
+            } elseif ($type === 'inline') {
+
+            } elseif ($type === 'select') {
+                // @todo hack
+                $newSysSiteData['site']['rootPageId'] = 1;
+            } else {
+                throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
+            }
+        }
+        $yaml = Yaml::dump($newSysSiteData, 99, 2);
+
+        try {
+            $currentConfig = $siteConfiguration->getByPageUid($pageId);
+            $currentIdentifier = $currentConfig['siteIdentifier'];
+            if ($currentIdentifier !== $siteIdentifier) {
+                // @todo error handling / mkdir-deep?
+                rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+            }
+            // @todo error handling
+            GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
+        } catch (SiteConfigurationNotFoundException $e) {
+            // @todo distinct new site for new record from other error
+        }
+
+
+
         // @todo ugly
-        $siteIdentifier = $parsedBody['data']['sys_site']['0']['identifier'] ?? null;
         $saveRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'edit', 'site' => $siteIdentifier]);
 
         if ($isSave) {

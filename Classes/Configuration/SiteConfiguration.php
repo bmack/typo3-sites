@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Sites\Configuration;
 use Symfony\Component\Finder\Finder;
 use TYPO3\CMS\Core\Configuration\Loader\YamlFileLoader;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\SiteConfigurationNotFoundException;
 
 /**
  * @todo: is this the right place?
@@ -35,12 +36,12 @@ class SiteConfiguration
     public function getByPageUid(int $rootPageId): array
     {
         $allSites = $this->resolveAllExistingConfigurations();
-        foreach ($allSites as $site => $siteDetails) {
+        foreach ($allSites as $siteIdentifier => $siteDetails) {
             if ($siteDetails['rootPageId'] === $rootPageId) {
                 return $siteDetails;
             }
         }
-        throw new \RuntimeException(
+        throw new SiteConfigurationNotFoundException(
             'No site configuration for root page uid ' . $rootPageId . ' found.',
             1520884750
         );
@@ -61,8 +62,9 @@ class SiteConfiguration
                     unset($configuration['site'][$fieldName][0]);
                 }
             }
-            $identifier = basename($fileInfo->getPath());
-            $sites[$identifier] = $configuration['site'];
+            $siteIdentifier = basename($fileInfo->getPath());
+            $configuration['site']['siteIdentifier'] = $siteIdentifier;
+            $sites[$siteIdentifier] = $configuration['site'];
         }
         return $sites;
     }

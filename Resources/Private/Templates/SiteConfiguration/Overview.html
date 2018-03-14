@@ -18,9 +18,9 @@
                 <a href="#" class="t3js-contextmenutrigger" data-table="pages" data-uid="{page.uid}"><core:iconForRecord table="pages" row="{page}" /></a> {page.rootline} [ID: {page.uid}]
             </td>
             <td>
-                <f:if condition="{page.siteidentifier}">
+                <f:if condition="{page.siteIdentifier}">
                     <f:then>
-                        <span class="label label-info">{page.siteidentifier}</span>
+                        <span class="label label-info">{page.siteIdentifier}</span>
                     </f:then>
                     <f:else>
                         <span class="label label-danger">No site configuration</span>
@@ -28,9 +28,9 @@
                 </f:if>
             </td>
             <td>
-                <f:if condition="{page.siteidentifier}">
+                <f:if condition="{page.siteIdentifier}">
                     <f:then>
-                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteidentifier}" title="Edit" class="btn btn-default">
+                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteIdentifier}" title="Edit" class="btn btn-default">
                             <core:icon identifier="actions-open" />
                         </f:be.link>
                     </f:then>
