@@ -70,7 +70,7 @@ return [
             'label' => 'Available Languages for this site',
             'config' => [
                 'type' => 'inline',
-                'foreign_table' => 'sys_sitelanguage',
+                'foreign_table' => 'sys_site_language',
                 'foreign_table_field' => 'site',
                 'foreign_selector' => 'language',
                 'foreign_unique' => 'language',
