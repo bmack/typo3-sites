@@ -28,18 +28,24 @@
                 </f:if>
             </td>
             <td>
-                <f:if condition="{page.siteIdentifier}">
-                    <f:then>
-                        <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteIdentifier}" title="Edit" class="btn btn-default">
-                            <core:icon identifier="actions-open" />
-                        </f:be.link>
-                    </f:then>
-                    <f:else>
-                        <f:be.link route="site_configuration" parameters="{action: 'edit', pageUid: page.uid}" title="Create configuration" class="btn btn-default">
-                            <core:icon identifier="actions-add" />
-                        </f:be.link>
-                    </f:else>
-                </f:if>
+                <div class="btn-group">
+                    <f:if condition="{page.siteIdentifier}">
+                        <f:then>
+                            <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteIdentifier}" title="Edit" class="btn btn-default">
+                                <core:icon identifier="actions-open" />
+                            </f:be.link>
+                            <f:be.link route="site_configuration" parameters="{action: 'delete', site:page.siteIdentifier}" title="Delete configuration" class="btn btn-default">
+                                <core:icon identifier="actions-delete" />
+                            </f:be.link>
+                        </f:then>
+                        <f:else>
+                            <f:be.link route="site_configuration" parameters="{action: 'edit', pageUid: page.uid}" title="Create configuration" class="btn btn-default">
+                                <core:icon identifier="actions-add" />
+                            </f:be.link>
+                            <span class="btn btn-default disabled"><core:icon identifier="empty-empty" /></span>
+                        </f:else>
+                    </f:if>
+                </div>
             </td>
         </tr>
     </f:for>

@@ -157,6 +157,7 @@ class SiteConfigurationController
         $this->view->assign('formEngineHtml', $formResult['html']);
         $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
     }
+
     /**
      * Save incoming data from editAction and redirect to overview or edit
      *
@@ -180,9 +181,6 @@ class SiteConfigurationController
         if (!$isSave && !$isSaveClose) {
             throw new \RuntimeException('Either save or save and close', 1520370364);
         }
-
-        // @todo throw if identifier not set?
-        // @todo Store data here
 
         if (!isset($parsedBody['data']['sys_site']) || !is_array($parsedBody['data']['sys_site'])) {
             throw new \RuntimeException('No sys_site data or sys_site identifier given', 1521030950);
@@ -274,6 +272,28 @@ class SiteConfigurationController
         if ($isSave) {
             return new RedirectResponse($saveRoute);
         }
+        return new RedirectResponse($overviewRoute);
+    }
+
+    /**
+     * Delete an existing configuration
+     *
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    protected function deleteAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $siteIdentifier = $request->getQueryParams()['site'] ?? null;
+        if (empty($siteIdentifier)) {
+            throw new \RuntimeException('Not site identifier given', 1521565182);
+        }
+        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
+        if (!isset($allSiteConfiguration[$siteIdentifier])) {
+            throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521565232);
+        }
+        GeneralUtility::rmdir(PATH_site . 'typo3conf/sites/' . $siteIdentifier, true);
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
         return new RedirectResponse($overviewRoute);
     }
 
