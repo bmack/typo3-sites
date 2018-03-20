@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace TYPO3\CMS\Sites\Entity;
+namespace TYPO3\CMS\Sites\Site;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -16,7 +16,7 @@ namespace TYPO3\CMS\Sites\Entity;
  */
 
 /**
- * Value Object representing a single Site with available languages
+ * Entity representing a single Site with available languages
  */
 class Site
 {
@@ -89,14 +89,6 @@ class Site
     public function getLanguages(): array
     {
         return $this->languages;
-    }
-
-    public function getLanguageByLanguageId(int $languageId): SiteLanguage
-    {
-        if (!isset($this->languages[$languageId])) {
-            // throw error
-        }
-        return $this->languages[$languageId];
     }
 
     public function getParameter($parameterName)

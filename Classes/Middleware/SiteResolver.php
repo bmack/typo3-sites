@@ -21,7 +21,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Sites\Entity\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
  * Identify the current request and resolve the site to it.

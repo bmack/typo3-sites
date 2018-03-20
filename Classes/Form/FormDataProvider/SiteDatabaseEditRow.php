@@ -18,7 +18,7 @@ namespace TYPO3\CMS\Sites\Form\FormDataProvider;
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Sites\Entity\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
  * Transfer "row" from ['customData']['siteData'] to ['databaseRow']

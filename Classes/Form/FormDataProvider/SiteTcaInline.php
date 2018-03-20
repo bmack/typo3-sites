@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
-use TYPO3\CMS\Sites\Entity\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteReader;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
 
 /**

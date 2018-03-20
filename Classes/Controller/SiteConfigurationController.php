@@ -28,8 +28,8 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\RedirectResponse;
-use TYPO3\CMS\Sites\Entity\Site;
-use TYPO3\CMS\Sites\Entity\SiteReader;
+use TYPO3\CMS\Sites\Site\Site;
+use TYPO3\CMS\Sites\Site\SiteReader;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Imaging\Icon;
@@ -185,7 +185,6 @@ class SiteConfigurationController
     protected function saveAction(ServerRequestInterface $request): ResponseInterface
     {
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
-        $siteConfiguration = $this->siteReader;
         $siteTca = GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca();
 
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
@@ -305,8 +304,8 @@ class SiteConfigurationController
         if (empty($siteIdentifier)) {
             throw new \RuntimeException('Not site identifier given', 1521565182);
         }
-        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
-        if (!isset($allSiteConfiguration[$siteIdentifier])) {
+        $site = $this->siteReader->getSiteByIdentifier($siteIdentifier);
+        if (!$site) {
             throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521565232);
         }
         GeneralUtility::rmdir(PATH_site . 'typo3conf/sites/' . $siteIdentifier, true);
