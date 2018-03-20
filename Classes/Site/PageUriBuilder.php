@@ -36,6 +36,19 @@ class PageUriBuilder
     const ABSOLUTE_PATH = 'path';
 
     /**
+     * @var SiteReader
+     */
+    protected $siteReader;
+
+    /**
+     * PageUriBuilder constructor.
+     */
+    public function __construct()
+    {
+        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+    }
+
+    /**
      * @param $pageId
      * @param $queryParameters
      * @param $options ['language' => 123, ]
@@ -45,27 +58,32 @@ class PageUriBuilder
     public function buildUri(int $pageId, array $queryParameters = [], $options = [], $referenceType = self::ABSOLUTE_PATH): UriInterface
     {
         // Resolve site
-        // Resolve langauge
-        // If nothing is found, use index.php?id=123&additionalParams
+        $site = $this->getSiteForPage($pageId);
         // If something is found, use /en/?id=123&additionalParams
+        if ($site) {
+            // Resolve language (based on the options / query parameters
+            $site->getLanguages();
+        } else {
+            // If nothing is found, use index.php?id=123&additionalParams
+            return $this->buildLegacyUri($pageId, $queryParameters, $options);
+        }
     }
 
     protected function buildLegacyUri(int $pageId, array $queryParameters, $options)
     {
         // Resolve the previewDomain if in BE
         // Use typolink functionality in FE
-        //
     }
 
-    protected function getSiteLanguageForPage(int $pageId, $options = [])
+    protected function getSiteForPage(int $pageId)
     {
-        $reader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
         $fullRootLine = BackendUtility::BEgetRootline($pageId);
         foreach ($fullRootLine as $pageRecord) {
-            $site = $reader->getSiteByRootPageId((int)$pageRecord['uid']);
+            $site = $this->siteReader->getSiteByRootPageId((int)$pageRecord['uid']);
             if ($site !== null) {
-                break;
+                return $site;
             }
         }
+        return null;
     }
 }
