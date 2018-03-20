@@ -57,7 +57,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
                 continue;
             }
             if ($childTableName === 'sys_site_errorhandling'
-                || $childTableName === 'sys_sitelanguage'
+                || $childTableName === 'sys_site_language'
             ) {
                 $result = $this->resolveSiteRelatedChildren($result, $fieldName);
                 $result = $this->addForeignSelectorAndUniquePossibleRecords($result, $fieldName);
