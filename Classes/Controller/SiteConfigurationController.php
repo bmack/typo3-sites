@@ -108,44 +108,54 @@ class SiteConfigurationController
      */
     protected function editAction(ServerRequestInterface $request)
     {
+        $this->configureEditViewDocHeader();
+
         $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
 
-        $this->configureEditViewDocHeader();
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
-        if ($siteIdentifier) {
-            $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
-            if (!isset($allSiteConfiguration[$siteIdentifier])) {
-                // @todo throw an error;
-            }
+        $pageUid = (int)($request->getQueryParams()['pageUid'] ?? 0);
 
-            $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
-            $returnUrl = $uriBuilder->buildUriFromRoute('site_configuration');
-            $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
-            $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
-            $formDataCompilerInput = [
-                'tableName' => 'sys_site',
-                'vanillaUid' => $allSiteConfiguration[$siteIdentifier]['rootPageId'],
-                'command' => 'edit',
-                'returnUrl' => (string)$returnUrl,
-                'customData' => [
-                    'siteIdentifier' => $siteIdentifier,
-                ],
-            ];
-            $formData = $formDataCompiler->compile($formDataCompilerInput);
-            $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
-            $formData['renderType'] = 'outerWrapContainer';
-            $formResult = $nodeFactory->create($formData)->render();
-            // Needed to be set for 'onChange="reload"' and reload on type change to work
-            $formResult['doSaveFieldName'] = 'doSave';
-            $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
-            $formResultCompiler->mergeResult($formResult);
-            $formResultCompiler->addCssFiles();
-            $this->view->assign('returnUrl', $returnUrl);
-            $this->view->assign('formEngineHtml', $formResult['html']);
-            $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
-        } else {
-            // ?
+        if (empty($siteIdentifier) && empty($pageUid)) {
+            throw new \RuntimeException('Either site identifier to edit a config or page uid to add new config must be set', 1521561148);
         }
+        $isNewConfig = empty($siteIdentifier);
+
+        if ($isNewConfig) {
+            // @todo Evil hack until todo in DatabaseRowInitializeNew is fixed
+            $GLOBALS['_GET']['defVals']['sys_site']['rootPageId'] = $pageUid;
+        }
+
+        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
+        if (!$isNewConfig && !isset($allSiteConfiguration[$siteIdentifier])) {
+            throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521561226);
+        }
+
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $returnUrl = $uriBuilder->buildUriFromRoute('site_configuration');
+
+        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
+        $formDataCompilerInput = [
+            'tableName' => 'sys_site',
+            'vanillaUid' => $isNewConfig ? $pageUid : $allSiteConfiguration[$siteIdentifier]['rootPageId'],
+            'command' => $isNewConfig ? 'new' : 'edit',
+            'returnUrl' => (string)$returnUrl,
+            'customData' => [
+                'siteIdentifier' => $isNewConfig ? '' : $siteIdentifier,
+            ],
+        ];
+        $formData = $formDataCompiler->compile($formDataCompilerInput);
+        $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
+        $formData['renderType'] = 'outerWrapContainer';
+        $formResult = $nodeFactory->create($formData)->render();
+        // Needed to be set for 'onChange="reload"' and reload on type change to work
+        $formResult['doSaveFieldName'] = 'doSave';
+        $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
+        $formResultCompiler->mergeResult($formResult);
+        $formResultCompiler->addCssFiles();
+        $this->view->assign('returnUrl', $returnUrl);
+        $this->view->assign('formEngineHtml', $formResult['html']);
+        $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
     }
     /**
      * Save incoming data from editAction and redirect to overview or edit
@@ -174,10 +184,10 @@ class SiteConfigurationController
         // @todo throw if identifier not set?
         // @todo Store data here
 
-        if (!isset($parsedBody['data']['sys_site']) || !is_array($parsedBody['data']['sys_site'])
-        ) {
-            throw new \RuntimeException('Not sys_site data or sys_site identifier given', 1521030950);
+        if (!isset($parsedBody['data']['sys_site']) || !is_array($parsedBody['data']['sys_site'])) {
+            throw new \RuntimeException('No sys_site data or sys_site identifier given', 1521030950);
         }
+
         $data = $parsedBody['data'];
         $pageId = (int)key($data['sys_site']);
         $sysSiteRow = current($data['sys_site']);
@@ -208,9 +218,12 @@ class SiteConfigurationController
                 $foreignTable = $sysSiteTca['columns'][$fieldName]['config']['foreign_table'];
                 foreach ($childRowIds as $childRowId) {
                     $childRowData = [];
-                    if (!isset($data[$foreignTable][$childRowId])
-                        && empty($currentConfig[$fieldName])
-                    ) {
+                    if (!isset($data[$foreignTable][$childRowId])) {
+                        if (!empty($currentConfig[$fieldName][$childRowId])) {
+                            // A collapsed inline record: Fetch data from existing config
+                            $newSysSiteData['site'][$fieldName][] = $currentConfig[$fieldName][$childRowId];
+                            continue;
+                        }
                         throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);
                     }
                     $childRow = $data[$foreignTable][$childRowId];
@@ -231,21 +244,27 @@ class SiteConfigurationController
                     $newSysSiteData['site'][$fieldName][] = $childRowData;
                 }
             } elseif ($type === 'select') {
-                // @todo hack
-                $newSysSiteData['site']['rootPageId'] = 1;
+                if ($fieldName === 'rootPageId') {
+                    // Force rootPageId to integer for additional sanitation and more FormEngine freedom
+                    $newSysSiteData['site'][$fieldName] = (int)$fieldValue;
+                } else {
+                    $newSysSiteData['site'][$fieldName] = $fieldValue;
+                }
             } else {
                 throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
             }
         }
         $yaml = Yaml::dump($newSysSiteData, 99, 2);
 
-        if ($currentIdentifier !== $siteIdentifier) {
+        if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
             // @todo error handling / mkdir-deep?
             rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+        } elseif ($isNewConfiguration) {
+            // @todo error handling
+            GeneralUtility::mkdir_deep(PATH_site . 'typo3conf/sites/' . $siteIdentifier);
         }
         // @todo error handling
         GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
-        // @todo distinct new site for new record from other error
 
 
 

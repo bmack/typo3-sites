@@ -54,7 +54,6 @@ class SiteDatabaseEditRow implements FormDataProviderInterface
                     1520886092
                 );
             }
-            // @todo Set to proper uid as soon as vanillaUid is correct
             $rowData = $rowData[$parentFieldName][$result['vanillaUid']];
             $result['databaseRow']['uid'] = $result['vanillaUid'];
         } else {

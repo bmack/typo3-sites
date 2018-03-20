@@ -136,7 +136,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
     {
         $connectedUids = [];
         if ($result['command'] === 'edit') {
-            $siteConfigurationForPageUid = (int)$result['databaseRow']['rootPageId'];
+            $siteConfigurationForPageUid = (int)$result['databaseRow']['rootPageId'][0];
             $siteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class);
             $siteConfiguration = $siteConfiguration->getByPageUid($siteConfigurationForPageUid);
             if (is_array($siteConfiguration[$fieldName])) {
