@@ -1,5 +1,5 @@
 <?php
-namespace TYPO3\CMS\Sites;
+namespace TYPO3\CMS\Sites\Exception;
 
 /*
  * This file is part of the TYPO3 CMS project.

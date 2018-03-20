@@ -26,8 +26,10 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\RedirectResponse;
-use TYPO3\CMS\Sites\Configuration\SiteConfiguration;
+use TYPO3\CMS\Sites\Entity\Site;
+use TYPO3\CMS\Sites\Entity\SiteReader;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Imaging\Icon;
@@ -36,7 +38,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
-use TYPO3\CMS\Sites\SiteConfigurationNotFoundException;
+use TYPO3\CMS\Sites\Exception\SiteConfigurationNotFoundException;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
@@ -55,6 +57,16 @@ class SiteConfigurationController
      * @var ViewInterface
      */
     protected $view;
+
+    /**
+     * @var SiteReader
+     */
+    protected $siteReader;
+
+    public function __construct()
+    {
+        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+    }
 
     /**
      * Main entry method dispatches to other actions - those method names that end with "Action".
@@ -84,17 +96,18 @@ class SiteConfigurationController
     {
         $this->configureOverViewDocHeader();
         $unmappedSiteConfiguration = [];
-        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
+        /** @var Site[] $allSites */
+        $allSites = $this->siteReader->getAllSites();
         $pages = $this->getAllSitePages();
-        foreach ($allSiteConfiguration as $siteIdentifier => $siteConfiguration) {
-            $rootPageId = (int)$siteConfiguration['rootPageId'];
+        foreach ($allSites as $identifier => $site) {
+            $rootPageId = $site->getRootPageId();
             if (isset($pages[$rootPageId])) {
-                $pages[$rootPageId]['siteIdentifier'] = $siteIdentifier;
+                $pages[$rootPageId]['siteIdentifier'] = $identifier;
                 // @todo unused in view
-                $pages[$rootPageId]['siteConfiguration'] = $siteConfiguration;
+                $pages[$rootPageId]['siteConfiguration'] = $site;
             } else {
                 // @todo unused in view
-                $unmappedSiteConfiguration[$siteIdentifier] = $siteConfiguration;
+                $unmappedSiteConfiguration[$identifier] = $site;
             }
         }
         $this->view->assign('unmappedSiteConfiguration', $unmappedSiteConfiguration);
@@ -127,8 +140,9 @@ class SiteConfigurationController
             $GLOBALS['_GET']['defVals']['sys_site']['rootPageId'] = $pageUid;
         }
 
-        $allSiteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class)->getAllSites();
-        if (!$isNewConfig && !isset($allSiteConfiguration[$siteIdentifier])) {
+        /** @var Site[] $allSites */
+        $allSites = $this->siteReader->getAllSites();
+        if (!$isNewConfig && !isset($allSites[$siteIdentifier])) {
             throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521561226);
         }
 
@@ -139,7 +153,7 @@ class SiteConfigurationController
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'tableName' => 'sys_site',
-            'vanillaUid' => $isNewConfig ? $pageUid : $allSiteConfiguration[$siteIdentifier]['rootPageId'],
+            'vanillaUid' => $isNewConfig ? $pageUid : $allSites[$siteIdentifier]->getRootPageId(),
             'command' => $isNewConfig ? 'new' : 'edit',
             'returnUrl' => (string)$returnUrl,
             'customData' => [
@@ -156,7 +170,7 @@ class SiteConfigurationController
         $formResultCompiler->mergeResult($formResult);
         $formResultCompiler->addCssFiles();
         // Always add rootPageId as additional field to have a reference for new records
-        $this->view->assign('rootPageId', $isNewConfig ? $pageUid : $allSiteConfiguration[$siteIdentifier]['rootPageId']);
+        $this->view->assign('rootPageId', $isNewConfig ? $pageUid : $allSites[$siteIdentifier]->getRootPageId());
         $this->view->assign('returnUrl', $returnUrl);
         $this->view->assign('formEngineHtml', $formResult['html']);
         $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
@@ -171,7 +185,7 @@ class SiteConfigurationController
     protected function saveAction(ServerRequestInterface $request): ResponseInterface
     {
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
-        $siteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class);
+        $siteConfiguration = $this->siteReader;
         $siteTca = GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca();
 
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
@@ -200,8 +214,8 @@ class SiteConfigurationController
         $currentConfig = [];
         $currentIdentifier = '';
         try {
-            $currentConfig = $siteConfiguration->getByPageUid($pageId);
-            $currentIdentifier = $currentConfig['siteIdentifier'];
+            $currentConfig = $this->siteReader->getSiteByRootPageId($pageId);
+            $currentIdentifier = $currentConfig->getIdentifier();
         } catch (SiteConfigurationNotFoundException $e) {
             $isNewConfiguration = true;
             $pageId = (int)$parsedBody['rootPageId'];

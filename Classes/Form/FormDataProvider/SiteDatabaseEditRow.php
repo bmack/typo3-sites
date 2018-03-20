@@ -16,8 +16,9 @@ namespace TYPO3\CMS\Sites\Form\FormDataProvider;
  */
 
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Sites\Configuration\SiteConfiguration;
+use TYPO3\CMS\Sites\Entity\SiteReader;
 
 /**
  * Transfer "row" from ['customData']['siteData'] to ['databaseRow']
@@ -38,15 +39,15 @@ class SiteDatabaseEditRow implements FormDataProviderInterface
         }
 
         $tableName = $result['tableName'];
-        $siteConfiguration = GeneralUtility::makeInstance(SiteConfiguration::class);
+        $siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
         if ($tableName === 'sys_site') {
             $siteConfigurationForPageUid = (int)$result['vanillaUid'];
-            $rowData = $siteConfiguration->getByPageUid($siteConfigurationForPageUid);
+            $rowData = $siteReader->getSiteByRootPageId($siteConfigurationForPageUid)->getConfiguration();
             $result['databaseRow']['uid'] = $rowData['rootPageId'];
             $result['databaseRow']['identifier'] = $result['customData']['siteIdentifier'];
         } elseif ($tableName === 'sys_site_errorhandling' || $tableName === 'sys_site_language') {
             $siteConfigurationForPageUid = (int)($result['inlineTopMostParentUid'] ?? $result['inlineParentUid']);
-            $rowData = $siteConfiguration->getByPageUid($siteConfigurationForPageUid);
+            $rowData = $siteReader->getSiteByRootPageId($siteConfigurationForPageUid)->getConfiguration();
             $parentFieldName = $result['inlineParentFieldName'];
             if (!isset($rowData[$parentFieldName])) {
                 throw new \RuntimeException(

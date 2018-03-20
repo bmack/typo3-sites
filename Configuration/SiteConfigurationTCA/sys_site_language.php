@@ -44,6 +44,18 @@ return [
                 'type' => 'input'
             ]
         ],
+        'locale' => [
+            'label' => 'Language Locale',
+            'config' => [
+                'type' => 'input'
+            ]
+        ],
+        'languagekey' => [
+            'label' => 'Language Key for XLF files',
+            'config' => [
+                'type' => 'input'
+            ]
+        ],
         'fallbackType' => [
             'label' => 'Fallback Type',
             'config' => [
@@ -73,7 +85,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'site, language, base, fallbackType, fallbacks',
+            'showitem' => 'site, language, base, locale, languagekey, fallbackType, fallbacks',
         ],
     ],
 ];
