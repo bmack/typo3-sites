@@ -135,6 +135,8 @@ class SiteConfigurationController
             $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
             $formData['renderType'] = 'outerWrapContainer';
             $formResult = $nodeFactory->create($formData)->render();
+            // Needed to be set for 'onChange="reload"' and reload on type change to work
+            $formResult['doSaveFieldName'] = 'doSave';
             $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
             $formResultCompiler->mergeResult($formResult);
             $formResultCompiler->addCssFiles();
@@ -163,7 +165,7 @@ class SiteConfigurationController
             // Closing means no save, just redirect to overview
             return new RedirectResponse($overviewRoute);
         }
-        $isSave = $parsedBody['_savedok'] ?? false;
+        $isSave = $parsedBody['_savedok'] ?? $parsedBody['doSave'] ?? false;
         $isSaveClose = $parsedBody['_saveandclosedok'] ?? false;
         if (!$isSave && !$isSaveClose) {
             throw new \RuntimeException('Either save or save and close', 1520370364);
