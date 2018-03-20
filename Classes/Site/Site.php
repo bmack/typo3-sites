@@ -20,8 +20,14 @@ namespace TYPO3\CMS\Sites\Site;
  */
 class Site
 {
+    /**
+     * @var string
+     */
     protected $identifier;
 
+    /**
+     * @var string
+     */
     protected $base;
 
     /**
@@ -45,7 +51,7 @@ class Site
         $this->identifier = $identifier;
         $this->rootPageId = $rootPageId;
         $this->parameters = $parameters;
-        $parameters['availableLanguages'] = $parameters['availableLanguages'] ?? [0 => ['language' => 0]];
+        $parameters['availableLanguages'] = !empty($parameters['availableLanguages']) ? $parameters['availableLanguages'] : [0 => ['language' => 0]];
         $this->base = $parameters['base'];
         foreach ($parameters['availableLanguages'] as $languageConfiguration) {
             $languageUid = (int)$languageConfiguration['language'];
