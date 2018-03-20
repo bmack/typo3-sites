@@ -57,7 +57,7 @@ class SiteConfigurationController
     protected $view;
 
     /**
-     * Injects the request object for the current request, and renders the overview of all sites
+     * Main entry method dispatches to other actions - those method names that end with "Action".
      *
      * @param ServerRequestInterface $request the current request
      * @return ResponseInterface the response with the content
@@ -110,6 +110,8 @@ class SiteConfigurationController
     {
         $this->configureEditViewDocHeader();
 
+        // Brings "our" sys_site and friends TCA into global TCA
+        // @todo: We might be able to get rid of that later
         $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
 
         $siteIdentifier = $request->getQueryParams()['site'] ?? null;
@@ -121,7 +123,7 @@ class SiteConfigurationController
         $isNewConfig = empty($siteIdentifier);
 
         if ($isNewConfig) {
-            // @todo Evil hack until todo in DatabaseRowInitializeNew is fixed
+            // @todo Evil hack until todo in DatabaseRowInitializeNew is fixed sets root page Uid for new record
             $GLOBALS['_GET']['defVals']['sys_site']['rootPageId'] = $pageUid;
         }
 
@@ -153,6 +155,8 @@ class SiteConfigurationController
         $formResultCompiler = GeneralUtility::makeInstance(FormResultCompiler::class);
         $formResultCompiler->mergeResult($formResult);
         $formResultCompiler->addCssFiles();
+        // Always add rootPageId as additional field to have a reference for new records
+        $this->view->assign('rootPageId', $isNewConfig ? $pageUid : $allSiteConfiguration[$siteIdentifier]['rootPageId']);
         $this->view->assign('returnUrl', $returnUrl);
         $this->view->assign('formEngineHtml', $formResult['html']);
         $this->view->assign('formEngineFooter', $formResultCompiler->printNeededJSFunctions());
@@ -187,6 +191,7 @@ class SiteConfigurationController
         }
 
         $data = $parsedBody['data'];
+        // This can be NEW... for new records
         $pageId = (int)key($data['sys_site']);
         $sysSiteRow = current($data['sys_site']);
         $siteIdentifier = $sysSiteRow['identifier'] ?? null;
@@ -199,10 +204,13 @@ class SiteConfigurationController
             $currentIdentifier = $currentConfig['siteIdentifier'];
         } catch (SiteConfigurationNotFoundException $e) {
             $isNewConfiguration = true;
+            $pageId = (int)$parsedBody['rootPageId'];
         }
 
         $sysSiteTca = $siteTca['sys_site'];
         $newSysSiteData = [];
+        // Hard set rootPageId: This is TCA readOnly and not transmitted directly, but is also the "uid" of the sys_site record
+        $newSysSiteData['site']['rootPageId'] = $pageId;
         foreach ($sysSiteRow as $fieldName => $fieldValue) {
             $type = $sysSiteTca['columns'][$fieldName]['config']['type'];
             if ($type === 'input') {
@@ -242,16 +250,12 @@ class SiteConfigurationController
                     $newSysSiteData['site'][$fieldName][] = $childRowData;
                 }
             } elseif ($type === 'select') {
-                if ($fieldName === 'rootPageId') {
-                    // Force rootPageId to integer for additional sanitation and more FormEngine freedom
-                    $newSysSiteData['site'][$fieldName] = (int)$fieldValue;
-                } else {
-                    $newSysSiteData['site'][$fieldName] = $fieldValue;
-                }
+                $newSysSiteData['site'][$fieldName] = (int)$fieldValue;
             } else {
                 throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
             }
         }
+
         $yaml = Yaml::dump($newSysSiteData, 99, 2);
 
         if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {

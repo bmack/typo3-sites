@@ -24,15 +24,10 @@ return [
             'label' => 'Root Page ID (You must create a page with a site root flag)',
             'config' => [
                 'type' => 'select',
-                'items' => [
-                    ['please choose a page', '']
-                ],
+                'readOnly' => true,
                 'renderType' => 'selectSingle',
                 'foreign_table' => 'pages',
                 'foreign_table_where' => ' AND (is_siteroot=1 OR (pid=0 AND doktype IN (1,6,7))) AND l10n_parent = 0 ORDER BY pid, sorting',
-                'size' => 1,
-                'min' => 1,
-                'max' => 1,
             ]
         ],
         'base' => [

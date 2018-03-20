@@ -64,6 +64,12 @@ class SiteConfiguration
             }
             $siteIdentifier = basename($fileInfo->getPath());
             $configuration['site']['siteIdentifier'] = $siteIdentifier;
+            if (empty($configuration['site']['rootPageId'])) {
+                throw new \RuntimeException(
+                    'Invalid site configuration found, rootPageId must be set for identifier ' . $siteIdentifier,
+                    1521569721
+                );
+            }
             $sites[$siteIdentifier] = $configuration['site'];
         }
         return $sites;
