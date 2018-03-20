@@ -189,7 +189,34 @@ class SiteConfigurationController
             if ($type === 'input') {
                 $newSysSiteData['site'][$fieldName] = $fieldValue;
             } elseif ($type === 'inline') {
-
+                $newSysSiteData['site'][$fieldName] = [];
+                $childRowIds = GeneralUtility::trimExplode(',', $fieldValue, true);
+                if (!isset($sysSiteTca['columns'][$fieldName]['config']['foreign_table'])) {
+                    throw new \RuntimeException('No foreign_table found for inline type', 1521555037);
+                }
+                $foreignTable = $sysSiteTca['columns'][$fieldName]['config']['foreign_table'];
+                foreach ($childRowIds as $childRowId) {
+                    $childRowData = [];
+                    if (!isset($data[$foreignTable][$childRowId])) {
+                        throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);
+                    }
+                    $childRow = $data[$foreignTable][$childRowId];
+                    foreach ($childRow as $childFieldName => $childFieldValue) {
+                        if ($childFieldName === 'pid') {
+                            // pid is added by inline by default, but not relevant for yml storage
+                            continue;
+                        }
+                        $type = $siteTca[$foreignTable]['columns'][$childFieldName]['config']['type'];
+                        if ($type === 'input') {
+                            $childRowData[$childFieldName] = $childFieldValue;
+                        } elseif ($type === 'select') {
+                            $childRowData[$childFieldName] = $childFieldValue;
+                        } else {
+                            throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521555340);
+                        }
+                    }
+                    $newSysSiteData['site'][$fieldName][] = $childRowData;
+                }
             } elseif ($type === 'select') {
                 // @todo hack
                 $newSysSiteData['site']['rootPageId'] = 1;
@@ -226,7 +253,7 @@ class SiteConfigurationController
     /**
      * @param string $templateName
      */
-    protected function initializeView(string $templateName)
+    protected function initializeView(string $templateName): void
     {
         $this->view = GeneralUtility::makeInstance(StandaloneView::class);
         $this->view->setTemplate($templateName);

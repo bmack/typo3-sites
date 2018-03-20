@@ -11,13 +11,13 @@ site:
       fallbackType: strict
       fallbacks: 3,4,5
   errorHandling:
-    - site: 23
+    -
       errorCode: 403
       errorHandler: ContentFromPid
       errorFluidTemplate: EXT:foo/Resources/Private/Templates/404.html
       errorContentSource: 123
       errorPhpClassFQCN: MyVendor\MyExtension\MyClass::handleFourZeroFour
-    - site: 42
+    -
       errorCode: 404
       errorHandler: ContentFromPid
       errorFluidTemplate: EXT:foo/Resources/Private/Templates/404.html

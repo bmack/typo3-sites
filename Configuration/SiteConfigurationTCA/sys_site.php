@@ -82,7 +82,6 @@ return [
             'config' => [
                 'type' => 'inline',
                 'foreign_table' => 'sys_site_errorhandling',
-                'foreign_field' => 'site',
             ]
         ]
     ],

@@ -20,12 +20,6 @@ return [
     ],
     'interface' => [],
     'columns' => [
-        'site' => [
-            'label' => 'Belongs to site_and_language',
-            'config' => [
-                'type' => 'passthrough',
-            ]
-        ],
         'errorCode' => [
             'label' => 'Error Status Code',
             'config' => [
@@ -78,16 +72,16 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'site, errorCode, errorHandler',
+            'showitem' => 'errorCode, errorHandler',
         ],
         'Fluid' => [
-            'showitem' => 'site, errorCode, errorHandler, errorFluidTemplate',
+            'showitem' => 'errorCode, errorHandler, errorFluidTemplate',
         ],
         'ContentFromPid' => [
-            'showitem' => 'site, errorCode, errorHandler, errorContentSource',
+            'showitem' => 'errorCode, errorHandler, errorContentSource',
         ],
         'ClassDispatcher' => [
-            'showitem' => 'site, errorCode, errorHandler, errorPhpClassFQCN',
+            'showitem' => 'errorCode, errorHandler, errorPhpClassFQCN',
         ],
     ],
 ];
