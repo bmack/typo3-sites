@@ -51,8 +51,8 @@ class SiteResolver implements MiddlewareInterface
             $request = $request->withAttribute('site', $site);
             $request = $request->withAttribute('language', $language);
             // At this point, we later get further route modifiers
-            // for bw-compat we update GLOBALS[TYPO3_REQUEST] and define stuff in TSFE.
-            $GLOBALS['SERVER_REQUEST'] = $request;
+            // for bw-compat we update $GLOBALS[TYPO3_REQUEST] and define stuff in TSFE.
+            $GLOBALS['TYPO3_REQUEST'] = $request;
         }
         return $handler->handle($request);
     }

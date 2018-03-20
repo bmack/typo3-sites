@@ -212,12 +212,12 @@ class SiteConfigurationController
         $isNewConfiguration = false;
         $currentConfig = [];
         $currentIdentifier = '';
-        try {
-            $currentConfig = $this->siteReader->getSiteByRootPageId($pageId);
-            $currentIdentifier = $currentConfig->getIdentifier();
-        } catch (SiteConfigurationNotFoundException $e) {
+        $site = $this->siteReader->getSiteByRootPageId($pageId);
+        if ($site === null) {
             $isNewConfiguration = true;
             $pageId = (int)$parsedBody['rootPageId'];
+        } else {
+            $currentIdentifier = $site->getIdentifier();
         }
 
         $sysSiteTca = $siteTca['sys_site'];
@@ -268,7 +268,6 @@ class SiteConfigurationController
                 throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
             }
         }
-
         $yaml = Yaml::dump($newSysSiteData, 99, 2);
 
         if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
