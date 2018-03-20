@@ -19,6 +19,7 @@ use TYPO3\CMS\Backend\Form\FormDataCompiler;
 use TYPO3\CMS\Backend\Form\FormDataGroup\OnTheFly;
 use TYPO3\CMS\Backend\Form\FormDataGroup\TcaDatabaseRecord;
 use TYPO3\CMS\Backend\Form\FormDataProvider\AbstractDatabaseRecordProvider;
+use TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectItems;
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
 use TYPO3\CMS\Backend\Form\InlineStackProcessor;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -55,8 +56,11 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
             if ($childTableName !== 'sys_site_errorhandling' && !$this->isUserAllowedToModify($fieldConfig)) {
                 continue;
             }
-            if ($childTableName === 'sys_site_errorhandling') {
+            if ($childTableName === 'sys_site_errorhandling'
+                || $childTableName === 'sys_sitelanguage'
+            ) {
                 $result = $this->resolveSiteRelatedChildren($result, $fieldName);
+                $result = $this->addForeignSelectorAndUniquePossibleRecords($result, $fieldName);
             } elseif ($result['inlineResolveExistingChildren']) {
                 $result = $this->resolveRelatedRecords($result, $fieldName);
                 $result = $this->addForeignSelectorAndUniquePossibleRecords($result, $fieldName);
@@ -275,10 +279,8 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
                 ],
                 'inlineExpandCollapseStateArray' => $result['inlineExpandCollapseStateArray'],
             ];
-            /** @var OnTheFly $formDataGroup */
             $formDataGroup = GeneralUtility::makeInstance(OnTheFly::class);
             $formDataGroup->setProviderList([TcaSelectItems::class]);
-            /** @var FormDataCompiler $formDataCompiler */
             $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
             $compilerResult = $formDataCompiler->compile($selectDataInput);
             $selectorOrUniquePossibleRecords = $compilerResult['processedTca']['columns'][$foreignFieldName]['config']['items'];

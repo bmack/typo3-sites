@@ -66,8 +66,6 @@ return [
             ]
         ],
         'defaultFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
-
-        /**
         'availableLanguages' => [
             'label' => 'Available Languages for this site',
             'config' => [
@@ -76,9 +74,9 @@ return [
                 'foreign_table_field' => 'site',
                 'foreign_selector' => 'language',
                 'foreign_unique' => 'language',
+                'size' => 4,
             ]
         ],
-         */
         'errorHandling' => [
             'label' => 'Error Handling',
             'config' => [
