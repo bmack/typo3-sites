@@ -183,6 +183,15 @@ class SiteConfigurationController
         $sysSiteRow = current($data['sys_site']);
         $siteIdentifier = $sysSiteRow['identifier'] ?? null;
 
+        $isNewConfiguration = false;
+        $currentConfig = [];
+        $currentIdentifier = '';
+        try {
+            $currentConfig = $siteConfiguration->getByPageUid($pageId);
+            $currentIdentifier = $currentConfig['siteIdentifier'];
+        } catch (SiteConfigurationNotFoundException $e) {
+            $isNewConfiguration = true;
+        }
 
         $sysSiteTca = $siteTca['sys_site'];
         $newSysSiteData = [];
@@ -199,7 +208,9 @@ class SiteConfigurationController
                 $foreignTable = $sysSiteTca['columns'][$fieldName]['config']['foreign_table'];
                 foreach ($childRowIds as $childRowId) {
                     $childRowData = [];
-                    if (!isset($data[$foreignTable][$childRowId])) {
+                    if (!isset($data[$foreignTable][$childRowId])
+                        && empty($currentConfig[$fieldName])
+                    ) {
                         throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);
                     }
                     $childRow = $data[$foreignTable][$childRowId];
@@ -228,18 +239,13 @@ class SiteConfigurationController
         }
         $yaml = Yaml::dump($newSysSiteData, 99, 2);
 
-        try {
-            $currentConfig = $siteConfiguration->getByPageUid($pageId);
-            $currentIdentifier = $currentConfig['siteIdentifier'];
-            if ($currentIdentifier !== $siteIdentifier) {
-                // @todo error handling / mkdir-deep?
-                rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
-            }
-            // @todo error handling
-            GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
-        } catch (SiteConfigurationNotFoundException $e) {
-            // @todo distinct new site for new record from other error
+        if ($currentIdentifier !== $siteIdentifier) {
+            // @todo error handling / mkdir-deep?
+            rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
         }
+        // @todo error handling
+        GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
+        // @todo distinct new site for new record from other error
 
 
 
