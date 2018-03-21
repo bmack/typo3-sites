@@ -135,9 +135,9 @@ class SiteConfigurationController
         }
         $isNewConfig = empty($siteIdentifier);
 
+        $defaultValues = [];
         if ($isNewConfig) {
-            // @todo Evil hack until todo in DatabaseRowInitializeNew is fixed sets root page Uid for new record
-            $GLOBALS['_GET']['defVals']['sys_site']['rootPageId'] = $pageUid;
+            $defaultValues['sys_site']['rootPageId'] = $pageUid;
         }
 
         /** @var Site[] $allSites */
@@ -159,6 +159,7 @@ class SiteConfigurationController
             'customData' => [
                 'siteIdentifier' => $isNewConfig ? '' : $siteIdentifier,
             ],
+            'defaultValues' => $defaultValues,
         ];
         $formData = $formDataCompiler->compile($formDataCompilerInput);
         $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
