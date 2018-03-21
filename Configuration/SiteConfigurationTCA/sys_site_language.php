@@ -2,7 +2,7 @@
 
 return [
     'ctrl' => [
-        'label' => 'language',
+        'label' => 'languageId',
         'crdate' => 'createdon',
         'cruser_id' => 'createdby',
         'tstamp' => 'updatedon',
