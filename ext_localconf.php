@@ -22,3 +22,5 @@ $iconRegistry->registerIcon(
     \TYPO3\CMS\Core\Imaging\IconProvider\FontawesomeIconProvider::class,
     [ 'name' => 'code' ]
 );
+
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_befunc.php']['viewOnClickClass'][] = TYPO3\CMS\Sites\Routing\BackendUriGenerationHook::class;

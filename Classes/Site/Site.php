@@ -55,6 +55,11 @@ class Site
         $this->base = $parameters['base'];
         foreach ($parameters['languages'] as $languageConfiguration) {
             $languageUid = (int)$languageConfiguration['language'];
+            $base = $languageConfiguration['base'] ?: '/';
+            $baseParts = parse_url($base);
+            if (!$baseParts['scheme']) {
+                $base = rtrim($this->base, '/') . '/' . ltrim($base, '/');
+            }
             if ((int)$languageConfiguration['language'] === 0) {
                 $languageConfiguration['locale'] = $parameters['defaultLocale'] ?? 'en_US';
                 $languageConfiguration['title'] = $parameters['defaultLanguageLabel'] ?? 'Default';
@@ -71,7 +76,7 @@ class Site
                 $this,
                 $languageUid,
                 $languageConfiguration['locale'] ?? '',
-                $languageConfiguration['base'] ?: '/',
+                $base,
                 $languageConfiguration
             );
         }
@@ -95,6 +100,11 @@ class Site
     public function getLanguages(): array
     {
         return $this->languages;
+    }
+
+    public function getLanguageById($languageId): SiteLanguage
+    {
+        return $this->languages[$languageId];
     }
 
     public function getParameter($parameterName)
