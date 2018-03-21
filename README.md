@@ -14,12 +14,20 @@ additional values:
 
 A site configuration is stored in typo3conf/sites/site-identifier/config.yaml.
 
-ToDo:
+Done:
+- Create a backend module
 - Create edit/create functionality based on FormEngine
-- Persist files into folder (also ensure that the folder always exists)
-- Create a SiteConfiguration definition
 - Create a "Site" object containing all values of a site
 - Create a PSR-15 middleware to find the correct site
+- Create Links to the frontend from backend
+
+ToDo:
+- Use site + language logic in frontend links
+- Implement fallback for &L= parameter
+- Build Error Handler functionality
+- Add caching layer
+- Handle fallback logic of fallbackTypes in Languages
+- Create API to persist files into folder (also ensure that the folder always exists)
 - Cleanup BE module (labels etc)
 - Tree-based view of sites in BE module
 - Comment all code
