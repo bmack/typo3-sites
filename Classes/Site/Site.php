@@ -70,7 +70,7 @@ class Site
             $this->languages[$languageUid] = new SiteLanguage(
                 $this,
                 $languageUid,
-                $languageConfiguration['locale'],
+                $languageConfiguration['locale'] ?? '',
                 $languageConfiguration['base'] ?: '/',
                 $languageConfiguration
             );
