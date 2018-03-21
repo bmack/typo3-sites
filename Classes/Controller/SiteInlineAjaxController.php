@@ -26,7 +26,7 @@ use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
-use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
+use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
 
 /**
  * FormEngine "edit" and "new" site configuration inline ajax related methods
@@ -73,7 +73,7 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         }
         $childTableName = $parentConfig['foreign_table'];
 
-        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'command' => 'new',
@@ -107,7 +107,7 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
                 ];
                 $childData['combinationChild'] = $this->compileChildChild($childData, $parentConfig, $inlineStackProcessor->getStructure());
             } else {
-                $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+                $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
                 $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
                 $formDataCompilerInput = [
                     'command' => 'new',
@@ -264,7 +264,7 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         $child = $inlineStackProcessor->getUnstableStructure();
         $childTableName = $child['table'];
 
-        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'command' => 'edit',

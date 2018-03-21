@@ -56,6 +56,9 @@ class SiteReader
         }
     }
 
+    /**
+     * @return Site[]
+     */
     public function getAllSites(): array
     {
         return $this->sites;

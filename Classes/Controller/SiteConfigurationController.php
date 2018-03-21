@@ -37,8 +37,8 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
-use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
-use TYPO3\CMS\Sites\Exception\SiteConfigurationNotFoundException;
+use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
+use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
@@ -140,7 +140,6 @@ class SiteConfigurationController
             $defaultValues['sys_site']['rootPageId'] = $pageUid;
         }
 
-        /** @var Site[] $allSites */
         $allSites = $this->siteReader->getAllSites();
         if (!$isNewConfig && !isset($allSites[$siteIdentifier])) {
             throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521561226);
@@ -149,7 +148,7 @@ class SiteConfigurationController
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $returnUrl = $uriBuilder->buildUriFromRoute('site_configuration');
 
-        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'tableName' => 'sys_site',

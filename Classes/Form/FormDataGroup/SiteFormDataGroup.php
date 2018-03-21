@@ -25,7 +25,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * This data group is for data fetched from sites yml files,
  * it is fed by "fake TCA" since there are no real db records.
  */
-class SiteConfigurationFormDataGroup implements FormDataGroupInterface
+class SiteFormDataGroup implements FormDataGroupInterface
 {
     /**
      * Compile form data

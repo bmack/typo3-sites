@@ -32,7 +32,7 @@ use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
 use TYPO3\CMS\Sites\Site\SiteReader;
-use TYPO3\CMS\Sites\Form\FormDataGroup\SiteConfigurationFormDataGroup;
+use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
 
 /**
  * Resolve and prepare inline data.
@@ -311,7 +311,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
         $inlineTopMostParent = $inlineStackProcessor->getStructureLevel(0);
 
         /** @var TcaDatabaseRecord $formDataGroup */
-        $formDataGroup = GeneralUtility::makeInstance(SiteConfigurationFormDataGroup::class);
+        $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
         /** @var FormDataCompiler $formDataCompiler */
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
