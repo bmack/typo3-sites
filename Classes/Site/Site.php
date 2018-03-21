@@ -102,7 +102,7 @@ class Site
         return $this->languages;
     }
 
-    public function getLanguageById($languageId): SiteLanguage
+    public function getLanguageById($languageId): ?SiteLanguage
     {
         return $this->languages[$languageId];
     }

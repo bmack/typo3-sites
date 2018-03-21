@@ -71,11 +71,15 @@ class PageUriBuilder
         $site = $this->getSiteForPage($pageId, $options['rootLine'] ?? null);
         // If something is found, use /en/?id=123&additionalParams
         $languageId = (int)($options['language'] ?? $queryParameters['L'] ?? 0);
+        $siteLanguage = null;
         if ($site) {
             // Resolve language (based on the options / query parameters, and remove it from GET variables,
             // as the language is determined by the language path
             unset($queryParameters['L']);
             $siteLanguage = $site->getLanguageById($languageId);
+        }
+        // Only if a language is configured for the site, build a new site URL.
+        if ($siteLanguage) {
             $uri = new Uri($siteLanguage->getBase() . '?id=' . $pageId . http_build_query($queryParameters, '', '&', PHP_QUERY_RFC3986));
         } else {
             $queryParameters['L'] = $languageId;
