@@ -5,7 +5,7 @@ site:
   defaultLanguageLabel: German
   defaultFlag: de
   defaultLocale: de_DE
-  availableLanguages:
+  languages:
     - language: 1
       base: https://mydomain.fr/
       fallbackType: strict

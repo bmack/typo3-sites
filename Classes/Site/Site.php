@@ -51,9 +51,9 @@ class Site
         $this->identifier = $identifier;
         $this->rootPageId = $rootPageId;
         $this->parameters = $parameters;
-        $parameters['availableLanguages'] = !empty($parameters['availableLanguages']) ? $parameters['availableLanguages'] : [0 => ['language' => 0]];
+        $parameters['languages'] = !empty($parameters['languages']) ? $parameters['languages'] : [0 => ['language' => 0]];
         $this->base = $parameters['base'];
-        foreach ($parameters['availableLanguages'] as $languageConfiguration) {
+        foreach ($parameters['languages'] as $languageConfiguration) {
             $languageUid = (int)$languageConfiguration['language'];
             if ((int)$languageConfiguration['language'] === 0) {
                 $languageConfiguration['locale'] = $parameters['defaultLocale'] ?? 'en_US';

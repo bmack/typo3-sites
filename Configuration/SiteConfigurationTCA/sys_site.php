@@ -61,7 +61,7 @@ return [
             ]
         ],
         'defaultFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
-        'availableLanguages' => [
+        'languages' => [
             'label' => 'Available Languages for this site',
             'config' => [
                 'type' => 'inline',
@@ -82,7 +82,7 @@ return [
     ],
     'types' => [
         '0' => [
-            'showitem' => '--div--;General, identifier, rootPageId, base, --div--;Language=0 Definition, --palette--;;language, --div--;Available Languages, availableLanguages, --div--;Error Handling, errorHandling',
+            'showitem' => '--div--;General, identifier, rootPageId, base, --div--;Language=0 Definition, --palette--;;language, --div--;Languages, languages, --div--;Error Handling, errorHandling',
         ],
     ],
     'palettes' => [
