@@ -210,14 +210,14 @@ class SiteConfigurationController
         $siteIdentifier = $sysSiteRow['identifier'] ?? null;
 
         $isNewConfiguration = false;
-        $currentConfig = [];
         $currentIdentifier = '';
-        $site = $this->siteReader->getSiteByRootPageId($pageId);
-        if ($site === null) {
+        try {
+            $currentSite = $this->siteReader->getSiteByRootPageId($pageId);
+            $currentSiteConfiguration = $currentSite->getConfiguration();
+            $currentIdentifier = $currentSite->getIdentifier();
+        } catch (SiteNotFoundException $e) {
             $isNewConfiguration = true;
             $pageId = (int)$parsedBody['rootPageId'];
-        } else {
-            $currentIdentifier = $site->getIdentifier();
         }
 
         $sysSiteTca = $siteTca['sys_site'];
@@ -238,9 +238,9 @@ class SiteConfigurationController
                 foreach ($childRowIds as $childRowId) {
                     $childRowData = [];
                     if (!isset($data[$foreignTable][$childRowId])) {
-                        if (!empty($currentConfig[$fieldName][$childRowId])) {
+                        if (!empty($currentSiteConfiguration[$fieldName][$childRowId])) {
                             // A collapsed inline record: Fetch data from existing config
-                            $newSysSiteData['site'][$fieldName][] = $currentConfig[$fieldName][$childRowId];
+                            $newSysSiteData['site'][$fieldName][] = $currentSiteConfiguration[$fieldName][$childRowId];
                             continue;
                         }
                         throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);

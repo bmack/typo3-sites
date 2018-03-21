@@ -19,6 +19,7 @@ use Symfony\Component\Finder\Finder;
 use TYPO3\CMS\Core\Configuration\Loader\YamlFileLoader;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 
 /**
  * Reads all available site configuration options, and puts them into Site objects.
@@ -79,12 +80,17 @@ class SiteReader
         return $baseUrls;
     }
 
-    public function getSiteByRootPageId(int $rootPageId)
+    /**
+     * @param int $rootPageId
+     * @return Site
+     * @throws SiteNotFoundException
+     */
+    public function getSiteByRootPageId(int $rootPageId): Site
     {
         if (isset($this->mappingRootPageIdToIdentifier[$rootPageId])) {
             return $this->sites[$this->mappingRootPageIdToIdentifier[$rootPageId]];
         }
-        return null;
+        throw new SiteNotFoundException('No site found for root page id ' . $rootPageId, 1521668882);
     }
 
     public function getSiteLanguageByBase(string $uri)
