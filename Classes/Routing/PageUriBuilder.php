@@ -56,7 +56,7 @@ class PageUriBuilder
      * @param int $pageId
      * @param array $queryParameters
      * @param string $fragment
-     * @param array $options ['language' => 123, ]
+     * @param array $options ['language' => 123, 'rootLine' => etc.]
      * @param string $referenceType
      * @return UriInterface
      */
@@ -66,15 +66,22 @@ class PageUriBuilder
         $site = $this->getSiteForPage($pageId, $options['rootLine'] ?? null);
         // If something is found, use /en/?id=123&additionalParams
         if ($site) {
-            $languageId = $options['language'] ?? $queryParameters['L'] ?? 0;
+            $languageId = (int)($options['language'] ?? $queryParameters['L'] ?? 0);
             unset($queryParameters['L']);
             // Resolve language (based on the options / query parameters
             $siteLanguage = $site->getLanguageById($languageId);
-            $uri = $siteLanguage->getBase() . '?id=' . $pageId . http_build_query($queryParameters, '', '&', PHP_QUERY_RFC3986);
-            return new Uri($uri);
+            $uri = new Uri($siteLanguage->getBase() . '?id=' . $pageId . http_build_query($queryParameters, '', '&', PHP_QUERY_RFC3986));
+        } else {
+            // If nothing is found, use index.php?id=123&additionalParams
+            $uri = $this->buildLegacyUri($pageId, $queryParameters, $options);
         }
-        // If nothing is found, use index.php?id=123&additionalParams
-        return $this->buildLegacyUri($pageId, $queryParameters, $options);
+        if ($fragment) {
+            $uri = $uri->withFragment($fragment);
+        }
+        if ($referenceType === self::ABSOLUTE_PATH) {
+            $uri = $uri->withScheme('')->withHost('')->withPort(null);
+        }
+        return $uri;
     }
 
     /**

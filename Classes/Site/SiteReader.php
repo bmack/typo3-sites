@@ -111,6 +111,7 @@ class SiteReader
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('sys_language');
+        $queryBuilder->getRestrictions()->removeAll();
         $statement = $queryBuilder->select('*')->from('sys_language')->orderBy('sorting')->execute();
         $languageRecords = [];
         while ($row = $statement->fetch()) {
