@@ -50,7 +50,7 @@ return [
                 'type' => 'input'
             ]
         ],
-        'languagekey' => [
+        'typo3Language' => [
             'label' => 'Language Key for XLF files',
             'config' => [
                 'type' => 'input'
@@ -86,7 +86,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'site, language, base, locale, languagekey, fallbackType, fallbacks',
+            'showitem' => 'site, language, base, locale, typo3Language, fallbackType, fallbacks',
         ],
     ],
 ];
