@@ -31,6 +31,9 @@ ToDo:
 - Cleanup BE module (labels etc)
 - Tree-based view of sites in BE module
 - Comment all code
+- FormEngine: Required section?
+- FormEngine: Valid identifier etc?
+- FormEngine: Cleanup "SiteConfigurationTCA" logic (do we need a ctrl section?)
 
 Resolves: #?
 Releases: master
