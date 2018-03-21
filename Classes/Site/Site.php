@@ -51,16 +51,16 @@ class Site
         $this->identifier = $identifier;
         $this->rootPageId = $rootPageId;
         $this->configuration = $attributes;
-        $attributes['languages'] = $attributes['languages'] ?: [0 => ['language' => 0]];
+        $attributes['languages'] = $attributes['languages'] ?: [0 => ['languageId' => 0]];
         $this->base = $attributes['base'] ?? '';
         foreach ($attributes['languages'] as $languageConfiguration) {
-            $languageUid = (int)$languageConfiguration['language'];
+            $languageUid = (int)$languageConfiguration['languageId'];
             $base = $languageConfiguration['base'] ?: '/';
             $baseParts = parse_url($base);
             if (!$baseParts['scheme']) {
                 $base = rtrim($this->base, '/') . '/' . ltrim($base, '/');
             }
-            if ((int)$languageConfiguration['language'] === 0) {
+            if ((int)$languageConfiguration['languageId'] === 0) {
                 $languageConfiguration['locale'] = $attributes['defaultLocale'] ?? 'en_US';
                 $languageConfiguration['title'] = $attributes['defaultLanguageLabel'] ?? 'Default';
                 $languageConfiguration['flag'] = $attributes['defaultLanguageFlag'] ?? 'us';

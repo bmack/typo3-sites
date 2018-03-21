@@ -41,8 +41,8 @@ return [
             'config' => [
                 'type' => 'inline',
                 'foreign_table' => 'sys_site_language',
-                'foreign_selector' => 'language',
-                'foreign_unique' => 'language',
+                'foreign_selector' => 'languageId',
+                'foreign_unique' => 'languageId',
                 'size' => 4,
             ]
         ],

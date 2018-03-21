@@ -18,7 +18,7 @@ return [
         'showRecordFieldList' => 'identifier'
     ],
     'columns' => [
-        'language' => [
+        'languageId' => [
             'label' => 'Language',
             'config' => [
                 'type' => 'select',
@@ -368,7 +368,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'language, title, base, locale, iso-639-1, typo3Language, flag, fallbackType, fallbacks',
+            'showitem' => 'languageId, title, base, locale, iso-639-1, typo3Language, flag, fallbackType, fallbacks',
         ],
     ],
 ];
