@@ -53,8 +53,11 @@ return [
         'typo3Language' => [
             'label' => 'Language Key for XLF files',
             'config' => [
-                'type' => 'input'
-            ]
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                // Fed by data provider
+                'items' => [],
+            ],
         ],
         'fallbackType' => [
             'label' => 'Fallback Type',

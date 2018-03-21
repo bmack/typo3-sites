@@ -257,9 +257,14 @@ class SiteConfigurationFormDataGroup implements FormDataGroupInterface
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexPrepare::class,
                 ],
             ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectTreeItems::class => [
+            \TYPO3\CMS\Sites\Form\FormDataProvider\SiteTcaSelectItems::class => [
                 'depends' => [
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectItems::class,
+                ],
+            ],
+            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectTreeItems::class => [
+                'depends' => [
+                    \TYPO3\CMS\Sites\Form\FormDataProvider\SiteTcaSelectItems::class,
                 ],
             ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInlineConfiguration::class => [
