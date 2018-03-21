@@ -19,6 +19,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
@@ -58,16 +59,16 @@ class BackendUriGenerationHook implements SingletonInterface
         $rootLine = $rootLine ?? BackendUtility::BEgetRootLine($pageUid);
         foreach ($rootLine as $pageInRootLine) {
             if ($pageInRootLine['uid'] > 0) {
-                $site = $this->siteReader->getSiteByRootPageId($pageInRootLine['uid']);
-                if ($site !== null) {
+                try {
+                    $site = $this->siteReader->getSiteByRootPageId($pageInRootLine['uid']);
                     // Create a multi-dimensional array out of the additional get vars
                     $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
                     $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);
-                    $previewUrl = (string)$uriBuilder->buildUri($pageUid, $additionalGetVars, $anchorSection, ['rootLine' => $rootLine], $uriBuilder::ABSOLUTE_URL);
-                    break;
+                    return (string)$uriBuilder->buildUri($pageUid, $additionalGetVars, $anchorSection, ['rootLine' => $rootLine], $uriBuilder::ABSOLUTE_URL);
+                } catch (SiteNotFoundException $e) {
+                    return $previewUrl;
                 }
             }
         }
-        return $previewUrl;
     }
 }

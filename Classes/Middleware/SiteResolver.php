@@ -21,6 +21,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
@@ -51,7 +52,10 @@ class SiteResolver implements MiddlewareInterface
         } elseif ($pageId) {
             // 2. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
             // @todo: loop over the whole rootline without permissions to get the actual site information
-            $site = $reader->getSiteByRootPageId($pageId);
+            try {
+                $site = $reader->getSiteByRootPageId($pageId);
+            } catch (SiteNotFoundException $e) {
+            }
         }
 
         // Add language+site information to the PSR-7 request object.

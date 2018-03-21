@@ -20,6 +20,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
@@ -117,9 +118,9 @@ class PageUriBuilder
     {
         $fullRootLine = $fullRootLine !== null ? $fullRootLine : BackendUtility::BEgetRootline($pageId);
         foreach ($fullRootLine as $pageRecord) {
-            $site = $this->siteReader->getSiteByRootPageId((int)$pageRecord['uid']);
-            if ($site !== null) {
-                return $site;
+            try {
+                return $this->siteReader->getSiteByRootPageId((int)$pageRecord['uid']);
+            } catch (SiteNotFoundException $e) {
             }
         }
         return null;
