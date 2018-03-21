@@ -58,6 +58,7 @@ return [
         ],
         'fallbackType' => [
             'label' => 'Fallback Type',
+            'onChange' => 'reload',
             'config' => [
                 'type' => 'select',
                 'renderType' => 'selectSingle',
@@ -69,6 +70,7 @@ return [
         ],
         'fallbacks' => [
             'label' => 'Fallback to other language(s) - order is important!',
+            'displayCond' => 'FIELD:fallbackType:=:fallback',
             'config' => [
                 'type' => 'select',
                 'renderType' => 'selectMultipleSideBySide',
