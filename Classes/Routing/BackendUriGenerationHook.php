@@ -21,9 +21,28 @@ use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Site\SiteReader;
 
+/**
+ * Hooks in the viewOnClick() logic in the TYPO3 Backend.
+ * If a link to a page is found, where a site is configured, the site handling is used to generate the frontend
+ * Link.
+ */
 class BackendUriGenerationHook implements SingletonInterface
 {
     /**
+     * @var SiteReader
+     */
+    protected $siteReader;
+
+    /**
+     * BackendUriGenerationHook constructor.
+     */
+    public function __construct()
+    {
+        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+    }
+
+    /**
+     * Post process Uri generation hook
      * @param $previewUrl
      * @param $pageUid
      * @param $rootLine
@@ -35,15 +54,14 @@ class BackendUriGenerationHook implements SingletonInterface
      */
     public function postProcess($previewUrl, $pageUid, $rootLine, $anchorSection, $viewScript, $additionalGetVars, $switchFocus): string
     {
-        // Create a multi-dimensional array out of the additional get vars
-        $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
         // Check if the page (= its rootline) has a site attached, otherwise just keep the URL as is
-        $siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
         $rootLine = $rootLine ?? BackendUtility::BEgetRootLine($pageUid);
         foreach ($rootLine as $pageInRootLine) {
             if ($pageInRootLine['uid'] > 0) {
-                $site = $siteReader->getSiteByRootPageId($pageInRootLine['uid']);
+                $site = $this->siteReader->getSiteByRootPageId($pageInRootLine['uid']);
                 if ($site !== null) {
+                    // Create a multi-dimensional array out of the additional get vars
+                    $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
                     $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);
                     $previewUrl = (string)$uriBuilder->buildUri($pageUid, $additionalGetVars, $anchorSection, ['rootLine' => $rootLine], $uriBuilder::ABSOLUTE_URL);
                     break;

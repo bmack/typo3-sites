@@ -36,24 +36,24 @@ class Site
     protected $rootPageId;
 
     /**
-     * Additional parameters configured for this site language
+     * Any attributes for this site
      * @var array
      */
-    protected $parameters;
+    protected $configuration;
 
     /**
      * @var SiteLanguage[]
      */
     protected $languages;
 
-    public function __construct(string $identifier, int $rootPageId, array $parameters, array $languageRecords = [])
+    public function __construct(string $identifier, int $rootPageId, array $attributes, array $languageRecords = [])
     {
         $this->identifier = $identifier;
         $this->rootPageId = $rootPageId;
-        $this->parameters = $parameters;
-        $parameters['languages'] = !empty($parameters['languages']) ? $parameters['languages'] : [0 => ['language' => 0]];
-        $this->base = $parameters['base'];
-        foreach ($parameters['languages'] as $languageConfiguration) {
+        $this->configuration = $attributes;
+        $attributes['languages'] = $attributes['languages'] ?: [0 => ['language' => 0]];
+        $this->base = $attributes['base'] ?? '';
+        foreach ($attributes['languages'] as $languageConfiguration) {
             $languageUid = (int)$languageConfiguration['language'];
             $base = $languageConfiguration['base'] ?: '/';
             $baseParts = parse_url($base);
@@ -61,11 +61,11 @@ class Site
                 $base = rtrim($this->base, '/') . '/' . ltrim($base, '/');
             }
             if ((int)$languageConfiguration['language'] === 0) {
-                $languageConfiguration['locale'] = $parameters['defaultLocale'] ?? 'en_US';
-                $languageConfiguration['title'] = $parameters['defaultLanguageLabel'] ?? 'Default';
-                $languageConfiguration['flag'] = $parameters['defaultLanguageFlag'] ?? 'us';
-                $languageConfiguration['xlf'] = $parameters['defaultLanguage'] ?? 'default';
-                $languageConfiguration['iso639-1'] = $parameters['defaultLanguageIsoCode'] ?? 'en';
+                $languageConfiguration['locale'] = $attributes['defaultLocale'] ?? 'en_US';
+                $languageConfiguration['title'] = $attributes['defaultLanguageLabel'] ?? 'Default';
+                $languageConfiguration['flag'] = $attributes['defaultLanguageFlag'] ?? 'us';
+                $languageConfiguration['xlf'] = $attributes['defaultLanguage'] ?? 'default';
+                $languageConfiguration['iso639-1'] = $attributes['defaultLanguageIsoCode'] ?? 'en';
             } else {
                 // @todo: what to do if no sys_language record was found?
                 $languageConfiguration['title']    = $languageRecords[$languageUid]['title'];
@@ -107,16 +107,16 @@ class Site
         return $this->languages[$languageId];
     }
 
-    public function getParameter($parameterName)
+    public function getAttribute($attributeName)
     {
-        if (isset($this->parameters[$parameterName])) {
-            return $this->parameters[$parameterName];
+        if (isset($this->configuration[$attributeName])) {
+            return $this->configuration[$attributeName];
         }
-        throw new \InvalidArgumentException('Parameter ' . $parameterName . ' does not exist on site ' . $this->identifier . '.');
+        throw new \InvalidArgumentException('Attribute ' . $attributeName . ' does not exist on site ' . $this->identifier . '.');
     }
 
     public function getConfiguration(): array
     {
-        return $this->parameters;
+        return $this->configuration;
     }
 }

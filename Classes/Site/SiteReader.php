@@ -89,7 +89,7 @@ class SiteReader
         $baseUris = $this->getBaseUris();
         $bestMatchedUri = null;
         foreach ($baseUris as $base => $language) {
-            if (strpos($uri, $base) === 0 && strlen($bestMatchedUri) < strlen($base)) {
+            if (strpos($uri, $base) === 0 && strlen($bestMatchedUri ?? '') < strlen($base)) {
                 $bestMatchedUri = $base;
             }
         }

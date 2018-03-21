@@ -28,11 +28,13 @@ use TYPO3\CMS\Sites\Site\SiteReader;
  * After that middleware, TSFE should be populated with
  * - language configuration
  * - site configuration
+ *
+ * Ideally, properties like config.sys_language_uid and config.language is then pre-set if not overriden via TypoScript.
  */
 class SiteResolver implements MiddlewareInterface
 {
     /**
-     *
+     * Resolve the site/language information by checking the page ID or the URL.
      *
      * @param ServerRequestInterface $request
      * @param RequestHandlerInterface $handler
@@ -41,18 +43,32 @@ class SiteResolver implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $reader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
-        // 1. Check if we have a _GET/_POST parameter for "id"
-        // 2. Check if there is a site, if not, just don't do anything
-        // First resolve the site
-        $uri = $request->getUri();
-        $language = $reader->getSiteLanguageByBase((string)$uri);
+        $pageId = $request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0;
+        // 1. Check if there is a site language, if not, just don't do anything
+        $language = $reader->getSiteLanguageByBase((string)$request->getUri());
         if ($language) {
             $site = $language->getSite();
+        } elseif ($pageId) {
+            // 2. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
+            // @todo: loop over the whole rootline without permissions to get the actual site information
+            $site = $reader->getSiteByRootPageId($pageId);
+        }
+
+        // Add language+site information to the PSR-7 request object.
+        if ($language && $site) {
             $request = $request->withAttribute('site', $site);
             $request = $request->withAttribute('language', $language);
             // At this point, we later get further route modifiers
             // for bw-compat we update $GLOBALS[TYPO3_REQUEST] and define stuff in TSFE.
             $GLOBALS['TYPO3_REQUEST'] = $request;
+
+            // Yes, hook into TSFE after TypoScript is parsed, baby.
+            // Ensure that TYPO3 can deal with /en/ but keeps the original behaviour for deep links.
+            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['configArrayPostProc'][] = function($param) use ($request, $site, $language) {
+                $param['config']['absRefPrefix'] = 'auto';
+                $param['config']['sys_language_uid'] = $language->getLanguageId();
+                $param['config']['sys_language_mode'] = $language->getFallbackType();
+            };
         }
         return $handler->handle($request);
     }
