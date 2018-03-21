@@ -36,37 +36,11 @@ return [
                 'type' => 'input',
             ]
         ],
-        'defaultLanguage' => [
-            'label' => 'Language key (used for XLF files)',
-            'config' => [
-                'type' => 'input',
-                'size' => 4,
-                'placeholder' => 'fr',
-            ]
-        ],
-        'defaultLanguageLabel' => [
-            'label' => 'Language label (e.g. "French")',
-            'config' => [
-                'type' => 'input',
-                'size' => 10,
-                'placeholder' => 'French',
-            ]
-        ],
-        'defaultLocale' => [
-            'label' => 'Locale (e.g. "fr_FR.UTF-8")',
-            'config' => [
-                'type' => 'input',
-                'size' => 8,
-                'placeholder' => 'fr_FR.UTF-8',
-            ]
-        ],
-        'defaultFlag' => $GLOBALS['TCA']['sys_language']['columns']['flag'],
         'languages' => [
             'label' => 'Available Languages for this site',
             'config' => [
                 'type' => 'inline',
                 'foreign_table' => 'sys_site_language',
-                'foreign_table_field' => 'site',
                 'foreign_selector' => 'language',
                 'foreign_unique' => 'language',
                 'size' => 4,
@@ -82,13 +56,7 @@ return [
     ],
     'types' => [
         '0' => [
-            'showitem' => '--div--;General, identifier, rootPageId, base, --div--;Language=0 Definition, --palette--;;language, --div--;Languages, languages, --div--;Error Handling, errorHandling',
+            'showitem' => '--div--;General, identifier, rootPageId, base, --div--;Languages, languages, --div--;Error Handling, errorHandling',
         ],
     ],
-    'palettes' => [
-        'language' => [
-            'label' => 'Define Language=0 parameters for this site',
-            'showitem' => 'defaultLanguageLabel,defaultLanguage,--linebreak--,defaultLocale,--linebreak--,defaultFlag'
-        ]
-    ]
 ];
