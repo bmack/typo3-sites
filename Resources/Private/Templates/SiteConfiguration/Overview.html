@@ -3,52 +3,75 @@
 
 <p>Not all your root pages have a site definition yet. blabla.</p>
 
-<table class="table table-condensed">
-    <thead>
-    <tr>
-        <th>Site</th>
-        <th>Configuration</th>
-        <th>&nbsp;</th>
-    </tr>
-    </thead>
-    <tbody>
-    <f:for each="{pages}" as="page">
+<div class="table-fit">
+    <table class="table table-striped table-hover table-condensed">
+        <thead>
         <tr>
-            <td>
-                <a href="#" class="t3js-contextmenutrigger" data-table="pages" data-uid="{page.uid}"><core:iconForRecord table="pages" row="{page}" /></a> {page.rootline} [ID: {page.uid}]
-            </td>
-            <td>
-                <f:if condition="{page.siteIdentifier}">
-                    <f:then>
-                        <span class="label label-info">{page.siteIdentifier}</span>
-                    </f:then>
-                    <f:else>
-                        <span class="label label-danger">No site configuration</span>
-                    </f:else>
-                </f:if>
-            </td>
-            <td>
-                <div class="btn-group">
+            <th>Site</th>
+            <th>Configuration</th>
+            <th>Base URLs</th>
+            <th>&nbsp;</th>
+        </tr>
+        </thead>
+        <tbody>
+        <f:for each="{pages}" as="page">
+            <tr>
+                <td nowrap style="line-height: 2em">
+                    <f:for each="{page.rootline}" as="rootLinePage" iteration="i">
+                        <span style="width: 1px; height: 1px; display:inline-block; margin-left: {rootLinePage.margin}px"></span>
+                        <f:if condition="{rootLinePage.uid} == {page.uid}">
+                            <f:then>
+                                <a href="#" class="t3js-contextmenutrigger" data-table="pages" data-uid="{rootLinePage.uid}">
+                                    <core:iconForRecord table="pages" row="{rootLinePage}" />
+                                </a> {rootLinePage.title} [ID: {page.uid}]
+                            </f:then>
+                            <f:else>
+                                <core:iconForRecord table="pages" row="{rootLinePage}" />
+                                {rootLinePage.title}<br>
+                            </f:else>
+                        </f:if>
+                    </f:for>
+                </td>
+                <td>
                     <f:if condition="{page.siteIdentifier}">
                         <f:then>
-                            <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteIdentifier}" title="Edit" class="btn btn-default">
-                                <core:icon identifier="actions-open" />
-                            </f:be.link>
-                            <f:be.link route="site_configuration" parameters="{action: 'delete', site:page.siteIdentifier}" title="Delete configuration" class="btn btn-default">
-                                <core:icon identifier="actions-delete" />
-                            </f:be.link>
+                            <span class="label label-info">{page.siteIdentifier}</span>
                         </f:then>
                         <f:else>
-                            <f:be.link route="site_configuration" parameters="{action: 'edit', pageUid: page.uid}" title="Create configuration" class="btn btn-default">
-                                <core:icon identifier="actions-add" />
-                            </f:be.link>
-                            <span class="btn btn-default disabled"><core:icon identifier="empty-empty" /></span>
+                            <span class="label label-danger">No site configuration</span>
                         </f:else>
                     </f:if>
-                </div>
-            </td>
-        </tr>
-    </f:for>
-    </tbody>
-</table>
+                </td>
+                <td>
+                    <f:if condition="{page.siteConfiguration}">
+                        <f:for each="{page.siteConfiguration.languages}" as="siteLanguage">
+                            {siteLanguage.title}: <a href="{siteLanguage.base}" target="_blank">{siteLanguage.base}</a><br>
+                        </f:for>
+                    </f:if>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <f:if condition="{page.siteIdentifier}">
+                            <f:then>
+                                <f:be.link route="site_configuration" parameters="{action: 'edit', site: page.siteIdentifier}" title="Edit" class="btn btn-default">
+                                    <core:icon identifier="actions-open" />
+                                </f:be.link>
+                                <f:be.link route="site_configuration" parameters="{action: 'delete', site:page.siteIdentifier}" title="Delete configuration" class="btn btn-default">
+                                    <core:icon identifier="actions-delete" />
+                                </f:be.link>
+                            </f:then>
+                            <f:else>
+                                <f:be.link route="site_configuration" parameters="{action: 'edit', pageUid: page.uid}" title="Create configuration" class="btn btn-default">
+                                    <core:icon identifier="actions-add" />
+                                </f:be.link>
+                                <span class="btn btn-default disabled"><core:icon identifier="empty-empty" /></span>
+                            </f:else>
+                        </f:if>
+                    </div>
+                </td>
+            </tr>
+        </f:for>
+        </tbody>
+    </table>
+    </div>
 </html>

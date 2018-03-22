@@ -103,7 +103,6 @@ class SiteConfigurationController
             $rootPageId = $site->getRootPageId();
             if (isset($pages[$rootPageId])) {
                 $pages[$rootPageId]['siteIdentifier'] = $identifier;
-                // @todo unused in view
                 $pages[$rootPageId]['siteConfiguration'] = $site;
             } else {
                 // @todo unused in view
@@ -401,8 +400,13 @@ class SiteConfigurationController
 
         $pages = [];
         while ($row = $statement->fetch()) {
-            $row['rootline'] = BackendUtility::getRecordPath((int)$row['uid'], '', 100);
-            $row['rootline'] = trim($row['rootline'], '/');
+            $row['rootline'] = BackendUtility::BEgetRootLine((int)$row['uid']);
+            array_pop($row['rootline']);
+            $row['rootline'] = array_reverse($row['rootline']);
+            $i = 0;
+            foreach ($row['rootline'] as &$record) {
+                $record['margin'] = $i++ * 20;
+            }
             $pages[(int)$row['uid']] = $row;
         }
         return $pages;
