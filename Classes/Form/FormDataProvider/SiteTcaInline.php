@@ -145,13 +145,43 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
                 $connectedUids = array_keys($siteConfiguration[$fieldName]);
             }
         }
+
+        // If we are dealing with sys_site_language, we *always* force a relation to sys_language "0"
+        $foreignTable = $result['processedTca']['columns'][$fieldName]['config']['foreign_table'];
+        if ($foreignTable === 'sys_site_language' && $result['command'] === 'new') {
+            // If new, just add a new default child
+            $child = $this->compileDefaultSysSiteLanguageChild($result, $fieldName);
+            $connectedUids[] = $child['databaseRow']['uid'];
+            $result['processedTca']['columns'][$fieldName]['children'][] = $child;
+        }
+
         $result['databaseRow'][$fieldName] = implode(',', $connectedUids);
         if ($result['inlineCompileExistingChildren']) {
             foreach ($connectedUids as $uid) {
-                $compiledChild = $this->compileChild($result, $fieldName, $uid);
-                $result['processedTca']['columns'][$fieldName]['children'][] = $compiledChild;
+                if (strpos($uid, 'NEW') !== 0) {
+                    $compiledChild = $this->compileChild($result, $fieldName, $uid);
+                    $result['processedTca']['columns'][$fieldName]['children'][] = $compiledChild;
+                }
             }
         }
+
+        // If we are dealing with sys_site_language, we *always* force a relation to sys_language "0"
+        if ($foreignTable === 'sys_site_language' && $result['command'] === 'edit') {
+            // If edit, find out if a child using sys_language "0" exists, else add it on top
+            $defaultSysSiteLanguageChildFound = false;
+            foreach ($result['processedTca']['columns'][$fieldName]['children'] as $child) {
+                if (isset($child['databaseRow']['languageId']) && (int)$child['databaseRow']['languageId'] == 0) {
+                    $defaultSysSiteLanguageChildFound = true;
+                }
+            }
+            if (!$defaultSysSiteLanguageChildFound) {
+                // Compile and add child as first child
+                $child = $this->compileDefaultSysSiteLanguageChild($result, $fieldName);
+                $result['databaseRow'][$fieldName] = $child['databaseRow']['uid'] . ',' . $result['databaseRow'][$fieldName];
+                array_unshift($result['processedTca']['columns'][$fieldName]['children'], $child);
+            }
+        }
+
         return $result;
     }
 
@@ -310,9 +340,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
         $inlineStackProcessor->initializeByGivenStructure($result['inlineStructure']);
         $inlineTopMostParent = $inlineStackProcessor->getStructureLevel(0);
 
-        /** @var TcaDatabaseRecord $formDataGroup */
         $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
-        /** @var FormDataCompiler $formDataCompiler */
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'command' => 'edit',
@@ -364,6 +392,43 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
             }
         }
         return $mainChild;
+    }
+
+    /**
+     * Compile default sys_site_language child using sys_language uid "0"
+     *
+     * @param array $result
+     * @param string $parentFieldName
+     * @return array
+     */
+    protected function compileDefaultSysSiteLanguageChild(array $result, string $parentFieldName): array
+    {
+        $parentConfig = $result['processedTca']['columns'][$parentFieldName]['config'];
+        $inlineStackProcessor = GeneralUtility::makeInstance(InlineStackProcessor::class);
+        $inlineStackProcessor->initializeByGivenStructure($result['inlineStructure']);
+        $inlineTopMostParent = $inlineStackProcessor->getStructureLevel(0);
+        $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
+        $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
+        $formDataCompilerInput = [
+            'command' => 'new',
+            'tableName' => 'sys_site_language',
+            'vanillaUid' => $result['inlineFirstPid'],
+            'returnUrl' => $result['returnUrl'],
+            'isInlineChild' => true,
+            'inlineStructure' => [],
+            'inlineExpandCollapseStateArray' => $result['inlineExpandCollapseStateArray'],
+            'inlineFirstPid' => $result['inlineFirstPid'],
+            'inlineParentConfig' => $parentConfig,
+            'inlineParentUid' => $result['databaseRow']['uid'],
+            'inlineParentTableName' => $result['tableName'],
+            'inlineParentFieldName' => $parentFieldName,
+            'inlineTopMostParentUid' => $result['inlineTopMostParentUid'] ?: $inlineTopMostParent['uid'],
+            'inlineTopMostParentTableName' => $result['inlineTopMostParentTableName'] ?: $inlineTopMostParent['table'],
+            'inlineTopMostParentFieldName' => $result['inlineTopMostParentFieldName'] ?: $inlineTopMostParent['field'],
+            // The sys_language uid 0
+            'inlineChildChildUid' => 0,
+        ];
+        return $formDataCompiler->compile($formDataCompilerInput);
     }
 
     /**
