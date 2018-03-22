@@ -62,6 +62,11 @@ class SiteResolver implements MiddlewareInterface
         if ($language && $site) {
             $request = $request->withAttribute('site', $site);
             $request = $request->withAttribute('language', $language);
+            $queryParams = $request->getQueryParams();
+            // necessary to calculate the proper hash base
+            $queryParams['L'] = $language->getLanguageId();
+            $request->withQueryParams($queryParams);
+            $_GET['L'] = $queryParams['L'];
             // At this point, we later get further route modifiers
             // for bw-compat we update $GLOBALS[TYPO3_REQUEST] and define stuff in TSFE.
             $GLOBALS['TYPO3_REQUEST'] = $request;
