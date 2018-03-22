@@ -28,6 +28,8 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Sites\Site\Site;
 use TYPO3\CMS\Sites\Site\SiteReader;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -206,7 +208,7 @@ class SiteConfigurationController
         // This can be NEW... for new records
         $pageId = (int)key($data['sys_site']);
         $sysSiteRow = current($data['sys_site']);
-        $siteIdentifier = $sysSiteRow['identifier'] ?? null;
+        $siteIdentifier = $sysSiteRow['identifier'] ?? '';
 
         $isNewConfiguration = false;
         $currentIdentifier = '';
@@ -217,7 +219,15 @@ class SiteConfigurationController
         } catch (SiteNotFoundException $e) {
             $isNewConfiguration = true;
             $pageId = (int)$parsedBody['rootPageId'];
+            if (!$pageId > 0) {
+                // Early validation of rootPageId - it must always be given and greater than 0
+                throw new \RuntimeException('No root page id found', 1521719709);
+            }
         }
+
+        $siteIdentifier = $this->validateAndProcessIdentifier($isNewConfiguration, $siteIdentifier, $pageId);
+        // Do not store or further process site identifier
+        unset($sysSiteRow['identifier']);
 
         $sysSiteTca = $siteTca['sys_site'];
         $newSysSiteData = [];
@@ -226,6 +236,7 @@ class SiteConfigurationController
         foreach ($sysSiteRow as $fieldName => $fieldValue) {
             $type = $sysSiteTca['columns'][$fieldName]['config']['type'];
             if ($type === 'input') {
+                $fieldValue = $this->validateAndProcessValue('sys_site', $isNewConfiguration, $fieldName, $fieldValue);
                 $newSysSiteData['site'][$fieldName] = $fieldValue;
             } elseif ($type === 'inline') {
                 $newSysSiteData['site'][$fieldName] = [];
@@ -288,6 +299,78 @@ class SiteConfigurationController
             return new RedirectResponse($saveRoute);
         }
         return new RedirectResponse($overviewRoute);
+    }
+
+    /**
+     * Validation and processing of site identifier
+     *
+     * @param bool $isNew If true, we're dealing with a new record
+     * @param string $identifier Given identifier to validate and process
+     * @param integer $rootPageId Page uid this identifier is bound to
+     * @return mixed Verified / modified value
+     */
+    protected function validateAndProcessIdentifier(bool $isNew, string $identifier, int $rootPageId)
+    {
+        // Normal "eval" processing of field first
+        $identifier = $this->validateAndProcessValue('sys_site', $isNew, 'identifier', $identifier);
+        if ($isNew) {
+            // Verify no other site with this identifier exists. If so, find a new unique name as
+            // identifier and show a flash message the identifier has been adapted
+            try {
+                $this->siteReader->getSiteByIdentifier($identifier);
+                // Force this identifier to be unique
+                $originalIdentifier = $identifier;
+                $identifier = $identifier . '-' . str_replace('.', '', uniqid((string)mt_rand(), true));
+                // @todo localize
+                $message = 'Given site identifier ' . $originalIdentifier . ' already exists. It has been renamed to ' . $identifier . '.'
+                    . ' Maybe you want to edit the site again and give it a better name.';
+                $messageTitle = 'Renamed identifier';
+                $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                $defaultFlashMessageQueue->enqueue($flashMessage);
+            } catch (SiteNotFoundException $e) {
+                // Do nothing, this new identifier is ok
+            }
+        } else {
+            // If this is an existing config, the site for this identifier must have the same rootPageId, otherwise
+            // a user tried to rename a site identifier to a different site that already exists. If so, we do not rename
+            // the site and show a flash message
+            try {
+                $site = $this->siteReader->getSiteByIdentifier($identifier);
+                if ($site->getRootPageId() !== $rootPageId) {
+                    // Find original value and keep this
+                    $origSite = $this->siteReader->getSiteByRootPageId($rootPageId);
+                    $originalIdentifier = $identifier;
+                    $identifier = $origSite->getIdentifier();
+                    // @todo localize
+                    $message = 'Given site identifier ' . $originalIdentifier . ' already exists and points to a different site.'
+                        . ' The existing identifier ' . $identifier . ' for this site is kept.';
+                    $messageTitle = 'Identifier not changed';
+                    $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                    $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                    $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                    $defaultFlashMessageQueue->enqueue($flashMessage);
+                }
+            } catch (SiteNotFoundException $e) {
+                // User is renaming identifier which does not exist yet. Thas is ok
+            }
+        }
+        return $identifier;
+    }
+
+    /**
+     * Simple validation and processing method for incoming form field values
+     *
+     * @param string $tableName Table name
+     * @param bool $isNew If true, we're dealing with a new record
+     * @param string $fieldName Field name
+     * @param mixed $fieldValue Incoming value from FormEngine
+     * @return mixed Verified / modified value
+     */
+    protected function validateAndProcessValue(string $tableName, bool $isNew, string $fieldName, $fieldValue)
+    {
+        return $fieldValue;
     }
 
     /**
