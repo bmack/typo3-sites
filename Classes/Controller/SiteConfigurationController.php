@@ -229,22 +229,21 @@ class SiteConfigurationController
         // Do not store or further process site identifier
         unset($sysSiteRow['identifier']);
 
-        $sysSiteTca = $siteTca['sys_site'];
         $newSysSiteData = [];
-        // Hard set rootPageId: This is TCA readOnly and not transmitted directly, but is also the "uid" of the sys_site record
+        // Hard set rootPageId: This is TCA readOnly and not transmitted by FormEngine, but is also the "uid" of the sys_site record
         $newSysSiteData['site']['rootPageId'] = $pageId;
         foreach ($sysSiteRow as $fieldName => $fieldValue) {
-            $type = $sysSiteTca['columns'][$fieldName]['config']['type'];
+            $type = $siteTca['sys_site']['columns'][$fieldName]['config']['type'];
             if ($type === 'input') {
                 $fieldValue = $this->validateAndProcessValue('sys_site', $isNewConfiguration, $fieldName, $fieldValue);
                 $newSysSiteData['site'][$fieldName] = $fieldValue;
             } elseif ($type === 'inline') {
                 $newSysSiteData['site'][$fieldName] = [];
                 $childRowIds = GeneralUtility::trimExplode(',', $fieldValue, true);
-                if (!isset($sysSiteTca['columns'][$fieldName]['config']['foreign_table'])) {
+                if (!isset($siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'])) {
                     throw new \RuntimeException('No foreign_table found for inline type', 1521555037);
                 }
-                $foreignTable = $sysSiteTca['columns'][$fieldName]['config']['foreign_table'];
+                $foreignTable = $siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'];
                 foreach ($childRowIds as $childRowId) {
                     $childRowData = [];
                     if (!isset($data[$foreignTable][$childRowId])) {
@@ -278,7 +277,6 @@ class SiteConfigurationController
                 throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
             }
         }
-        $yaml = Yaml::dump($newSysSiteData, 99, 2);
 
         if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
             // @todo error handling / mkdir-deep?
@@ -288,13 +286,10 @@ class SiteConfigurationController
             GeneralUtility::mkdir_deep(PATH_site . 'typo3conf/sites/' . $siteIdentifier);
         }
         // @todo error handling
+        $yaml = Yaml::dump($newSysSiteData, 99, 2);
         GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
 
-
-
-        // @todo ugly
         $saveRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'edit', 'site' => $siteIdentifier]);
-
         if ($isSave) {
             return new RedirectResponse($saveRoute);
         }
