@@ -22,6 +22,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
+use TYPO3\CMS\Sites\Site\Site;
+use TYPO3\CMS\Sites\Site\SiteLanguage;
 use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
@@ -47,6 +49,7 @@ class SiteResolver implements MiddlewareInterface
         $pageId = $request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0;
         // 1. Check if there is a site language, if not, just don't do anything
         $language = $reader->getSiteLanguageByBase((string)$request->getUri());
+        $site = null;
         if ($language) {
             $site = $language->getSite();
         } elseif ($pageId) {
@@ -59,7 +62,7 @@ class SiteResolver implements MiddlewareInterface
         }
 
         // Add language+site information to the PSR-7 request object.
-        if ($language && $site) {
+        if ($language instanceof SiteLanguage && $site instanceof Site) {
             $request = $request->withAttribute('site', $site);
             $request = $request->withAttribute('language', $language);
             $queryParams = $request->getQueryParams();
