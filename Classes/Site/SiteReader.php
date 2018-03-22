@@ -81,6 +81,8 @@ class SiteReader
     }
 
     /**
+     * Find a site by given root page id
+     *
      * @param int $rootPageId
      * @return Site
      * @throws SiteNotFoundException
@@ -105,12 +107,19 @@ class SiteReader
         return $baseUris[$bestMatchedUri] ?? null;
     }
 
-    public function getSiteByIdentifier($identifier): Site
+    /**
+     * Find a site by given identifier
+     *
+     * @param string $identifier
+     * @return Site
+     * @throws SiteNotFoundException
+     */
+    public function getSiteByIdentifier(string $identifier): Site
     {
         if (isset($this->sites[$identifier])) {
             return $this->sites[$identifier];
         }
-        // @todo: Throw custom "No Site with identifier found" exception
+        throw new SiteNotFoundException('No site found for identifier ' . $identifier, 1521716628);
     }
 
     /**

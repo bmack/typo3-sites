@@ -298,14 +298,12 @@ class SiteConfigurationController
      */
     protected function deleteAction(ServerRequestInterface $request): ResponseInterface
     {
-        $siteIdentifier = $request->getQueryParams()['site'] ?? null;
+        $siteIdentifier = $request->getQueryParams()['site'] ?? '';
         if (empty($siteIdentifier)) {
             throw new \RuntimeException('Not site identifier given', 1521565182);
         }
-        $site = $this->siteReader->getSiteByIdentifier($siteIdentifier);
-        if (!$site) {
-            throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521565232);
-        }
+        // Verify site does exist, method throws if not
+        $this->siteReader->getSiteByIdentifier($siteIdentifier);
         GeneralUtility::rmdir(PATH_site . 'typo3conf/sites/' . $siteIdentifier, true);
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);
