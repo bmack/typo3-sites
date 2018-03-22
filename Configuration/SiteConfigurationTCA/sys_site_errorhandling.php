@@ -24,6 +24,7 @@ return [
             'label' => 'Error Status Code',
             'config' => [
                 'type' => 'input',
+                'eval' => 'required',
                 'valuePicker' => [
                     'mode' => '',
                     'items' => [
@@ -54,19 +55,22 @@ return [
             'label' => 'Fluid Template File (use SITES:syntax if you like)',
             'config' => [
                 'type' => 'input',
+                'eval' => 'required',
             ]
         ],
         'errorContentSource' => [
             'label' => 'Show Content From Page',
             'config' => [
                 'type' => 'input',
-                'renderType' => 'inputLink'
+                'renderType' => 'inputLink',
+                'eval' => 'required',
             ]
         ],
         'errorPhpClassFQCN' => [
             'label' => 'ErrorHandler Class Target (FQCN)',
             'config' => [
                 'type' => 'input',
+                'eval' => 'required',
             ]
         ],
     ],

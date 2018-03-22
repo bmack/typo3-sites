@@ -30,6 +30,7 @@ use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Sites\Exception\SiteValidationErrorException;
 use TYPO3\CMS\Sites\Site\Site;
 use TYPO3\CMS\Sites\Site\SiteReader;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -229,65 +230,69 @@ class SiteConfigurationController
         // Do not store or further process site identifier
         unset($sysSiteRow['identifier']);
 
-        $newSysSiteData = [];
-        // Hard set rootPageId: This is TCA readOnly and not transmitted by FormEngine, but is also the "uid" of the sys_site record
-        $newSysSiteData['site']['rootPageId'] = $pageId;
-        foreach ($sysSiteRow as $fieldName => $fieldValue) {
-            $type = $siteTca['sys_site']['columns'][$fieldName]['config']['type'];
-            if ($type === 'input') {
-                $fieldValue = $this->validateAndProcessValue('sys_site', $isNewConfiguration, $fieldName, $fieldValue);
-                $newSysSiteData['site'][$fieldName] = $fieldValue;
-            } elseif ($type === 'inline') {
-                $newSysSiteData['site'][$fieldName] = [];
-                $childRowIds = GeneralUtility::trimExplode(',', $fieldValue, true);
-                if (!isset($siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'])) {
-                    throw new \RuntimeException('No foreign_table found for inline type', 1521555037);
-                }
-                $foreignTable = $siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'];
-                foreach ($childRowIds as $childRowId) {
-                    $childRowData = [];
-                    if (!isset($data[$foreignTable][$childRowId])) {
-                        if (!empty($currentSiteConfiguration[$fieldName][$childRowId])) {
-                            // A collapsed inline record: Fetch data from existing config
-                            $newSysSiteData['site'][$fieldName][] = $currentSiteConfiguration[$fieldName][$childRowId];
-                            continue;
-                        }
-                        throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);
+        try {
+            $newSysSiteData = [];
+            // Hard set rootPageId: This is TCA readOnly and not transmitted by FormEngine, but is also the "uid" of the sys_site record
+            $newSysSiteData['site']['rootPageId'] = $pageId;
+            foreach ($sysSiteRow as $fieldName => $fieldValue) {
+                $type = $siteTca['sys_site']['columns'][$fieldName]['config']['type'];
+                if ($type === 'input') {
+                    $fieldValue = $this->validateAndProcessValue('sys_site', $fieldName, $fieldValue);
+                    $newSysSiteData['site'][$fieldName] = $fieldValue;
+                } elseif ($type === 'inline') {
+                    $newSysSiteData['site'][$fieldName] = [];
+                    $childRowIds = GeneralUtility::trimExplode(',', $fieldValue, true);
+                    if (!isset($siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'])) {
+                        throw new \RuntimeException('No foreign_table found for inline type', 1521555037);
                     }
-                    $childRow = $data[$foreignTable][$childRowId];
-                    foreach ($childRow as $childFieldName => $childFieldValue) {
-                        if ($childFieldName === 'pid') {
-                            // pid is added by inline by default, but not relevant for yml storage
-                            continue;
+                    $foreignTable = $siteTca['sys_site']['columns'][$fieldName]['config']['foreign_table'];
+                    foreach ($childRowIds as $childRowId) {
+                        $childRowData = [];
+                        if (!isset($data[$foreignTable][$childRowId])) {
+                            if (!empty($currentSiteConfiguration[$fieldName][$childRowId])) {
+                                // A collapsed inline record: Fetch data from existing config
+                                $newSysSiteData['site'][$fieldName][] = $currentSiteConfiguration[$fieldName][$childRowId];
+                                continue;
+                            }
+                            throw new \RuntimeException('No data found for table ' . $foreignTable . ' with id ' . $childRowId, 1521555177);
                         }
-                        $type = $siteTca[$foreignTable]['columns'][$childFieldName]['config']['type'];
-                        if ($type === 'input') {
-                            $childRowData[$childFieldName] = $childFieldValue;
-                        } elseif ($type === 'select') {
-                            $childRowData[$childFieldName] = $childFieldValue;
-                        } else {
-                            throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521555340);
+                        $childRow = $data[$foreignTable][$childRowId];
+                        foreach ($childRow as $childFieldName => $childFieldValue) {
+                            if ($childFieldName === 'pid') {
+                                // pid is added by inline by default, but not relevant for yml storage
+                                continue;
+                            }
+                            $type = $siteTca[$foreignTable]['columns'][$childFieldName]['config']['type'];
+                            if ($type === 'input') {
+                                $childRowData[$childFieldName] = $childFieldValue;
+                            } elseif ($type === 'select') {
+                                $childRowData[$childFieldName] = $childFieldValue;
+                            } else {
+                                throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521555340);
+                            }
                         }
+                        $newSysSiteData['site'][$fieldName][] = $childRowData;
                     }
-                    $newSysSiteData['site'][$fieldName][] = $childRowData;
+                } elseif ($type === 'select') {
+                    $newSysSiteData['site'][$fieldName] = (int)$fieldValue;
+                } else {
+                    throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
                 }
-            } elseif ($type === 'select') {
-                $newSysSiteData['site'][$fieldName] = (int)$fieldValue;
-            } else {
-                throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
             }
-        }
 
-        if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
-            // @todo error handling / mkdir-deep?
-            rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
-        } elseif ($isNewConfiguration) {
+            if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
+                // @todo error handling / mkdir-deep?
+                rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+            } elseif ($isNewConfiguration) {
+                // @todo error handling
+                GeneralUtility::mkdir_deep(PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+            }
             // @todo error handling
-            GeneralUtility::mkdir_deep(PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+            $yaml = Yaml::dump($newSysSiteData, 99, 2);
+            GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
+        } catch (SiteValidationErrorException $e) {
+            // Do not store new config if a validation error is thrown
         }
-        // @todo error handling
-        $yaml = Yaml::dump($newSysSiteData, 99, 2);
-        GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
 
         $saveRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'edit', 'site' => $siteIdentifier]);
         if ($isSave) {
@@ -307,7 +312,7 @@ class SiteConfigurationController
     protected function validateAndProcessIdentifier(bool $isNew, string $identifier, int $rootPageId)
     {
         // Normal "eval" processing of field first
-        $identifier = $this->validateAndProcessValue('sys_site', $isNew, 'identifier', $identifier);
+        $identifier = $this->validateAndProcessValue('sys_site', 'identifier', $identifier);
         if ($isNew) {
             // Verify no other site with this identifier exists. If so, find a new unique name as
             // identifier and show a flash message the identifier has been adapted
@@ -355,16 +360,47 @@ class SiteConfigurationController
     }
 
     /**
-     * Simple validation and processing method for incoming form field values
+     * Simple validation and processing method for incoming form field values.
+     *
+     * Note this does not support all "eval" options but only what we really need.
      *
      * @param string $tableName Table name
-     * @param bool $isNew If true, we're dealing with a new record
      * @param string $fieldName Field name
      * @param mixed $fieldValue Incoming value from FormEngine
      * @return mixed Verified / modified value
+     * @throws SiteValidationErrorException
      */
-    protected function validateAndProcessValue(string $tableName, bool $isNew, string $fieldName, $fieldValue)
+    protected function validateAndProcessValue(string $tableName, string $fieldName, $fieldValue)
     {
+        $fieldConfig = $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'];
+        if (!empty($fieldConfig['eval'])) {
+            $evalArray = GeneralUtility::trimExplode(',', $fieldConfig['eval'], true);
+            // Processing
+            if (in_array('alphanum_x', $evalArray, true)) {
+                $fieldValue = preg_replace('/[^a-zA-Z0-9_-]/', '', $fieldValue);
+            }
+            if (in_array('lower', $evalArray, true)) {
+                $fieldValue = mb_strtolower($fieldValue, 'utf-8');
+            }
+            if (in_array('trim', $evalArray, true)) {
+                $fieldValue = trim($fieldValue);
+            }
+            // Validation throws - these should be handled client side already,
+            // eg. 'required' being set and receiving empty, shouldn't happen server side
+            if (in_array('required', $evalArray, true) && empty($fieldValue)) {
+                // @todo localize
+                $message = 'Field ' . $fieldName . ' is a required field, but no value has been provided.';
+                $messageTitle = 'Site configuration not saved';
+                $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                $defaultFlashMessageQueue->enqueue($flashMessage);
+                throw new SiteValidationErrorException(
+                    'Field ' . $fieldName . ' is set to required, but received empty.',
+                    1521726421
+                );
+            }
+        }
         return $fieldValue;
     }
 

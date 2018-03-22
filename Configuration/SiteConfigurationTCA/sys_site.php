@@ -17,7 +17,9 @@ return [
                 'type' => 'input',
                 'size' => 35,
                 'max' => 255,
-                'eval' => 'required,unique,lower,trim',
+                // identifier is used as directory name - allow a-z,0-9,_,- as chars only.
+                // unique is additionally checked server side
+                'eval' => 'required,lower,alphanum_x',
             ]
         ],
         'rootPageId' => [
@@ -34,6 +36,7 @@ return [
             'label' => 'Entry point (can be https://www.mydomain/ or just /, if it is just / you can not rely on TYPO3 creating full URLs)',
             'config' => [
                 'type' => 'input',
+                'eval' => 'required',
             ]
         ],
         'languages' => [
@@ -44,6 +47,7 @@ return [
                 'foreign_selector' => 'languageId',
                 'foreign_unique' => 'languageId',
                 'size' => 4,
+                'minitems' => 1,
             ]
         ],
         'errorHandling' => [

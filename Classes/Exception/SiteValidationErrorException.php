@@ -17,8 +17,8 @@ namespace TYPO3\CMS\Sites\Exception;
 use TYPO3\CMS\Sites\Exception;
 
 /**
- * Exception thrown if site configuration or incoming data is invalid
+ * Exception thrown if site configuration for a page is not found
  */
-class SiteNotFoundException extends Exception
+class SiteValidationErrorException extends Exception
 {
 }

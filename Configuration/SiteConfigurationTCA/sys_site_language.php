@@ -37,19 +37,22 @@ return [
             'config' => [
                 'type' => 'input',
                 'size' => 10,
+                'eval' => 'required',
                 'placeholder' => 'English',
             ]
         ],
         'base' => [
             'label' => 'Entry point (either https://www.mydomain.fr/ or /fr/)',
             'config' => [
-                'type' => 'input'
+                'type' => 'input',
+                'eval' => 'required',
             ]
         ],
         'locale' => [
             'label' => 'Language locale',
             'config' => [
                 'type' => 'input',
+                'eval' => 'required',
                 'placeholder' => 'fr_FR.UTF-8',
             ]
         ],
