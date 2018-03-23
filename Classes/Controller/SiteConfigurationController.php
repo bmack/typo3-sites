@@ -226,8 +226,8 @@ class SiteConfigurationController
             }
         }
 
+        // Validate site identifier and do not store or further process it
         $siteIdentifier = $this->validateAndProcessIdentifier($isNewConfiguration, $siteIdentifier, $pageId);
-        // Do not store or further process site identifier
         unset($sysSiteRow['identifier']);
 
         try {
@@ -279,6 +279,8 @@ class SiteConfigurationController
                     throw new \RuntimeException('TCA type ' . $type . ' not implemented in site handling', 1521032781);
                 }
             }
+
+            $newSysSiteData = $this->validateFullStructure($newSysSiteData);
 
             if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
                 // @todo error handling / mkdir-deep?
@@ -373,6 +375,7 @@ class SiteConfigurationController
     protected function validateAndProcessValue(string $tableName, string $fieldName, $fieldValue)
     {
         $fieldConfig = $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'];
+        // @todo: find out if there is an unhandled 'eval' and throw if so to avoid not implemented evals
         if (!empty($fieldConfig['eval'])) {
             $evalArray = GeneralUtility::trimExplode(',', $fieldConfig['eval'], true);
             // Processing
@@ -384,6 +387,9 @@ class SiteConfigurationController
             }
             if (in_array('trim', $evalArray, true)) {
                 $fieldValue = trim($fieldValue);
+            }
+            if (in_array('int', $evalArray, true)) {
+                $fieldValue = (int)$fieldValue;
             }
             // Validation throws - these should be handled client side already,
             // eg. 'required' being set and receiving empty, shouldn't happen server side
@@ -401,7 +407,79 @@ class SiteConfigurationController
                 );
             }
         }
+        if (isset($fieldConfig['range']['lower'])) {
+            $fieldValue = (int)$fieldValue < (int)$fieldConfig['range']['lower'] ? (int)$fieldConfig['range']['lower'] : (int)$fieldValue;
+        }
+        if (isset($fieldConfig['range']['upper'])) {
+            $fieldValue = (int)$fieldValue > (int)$fieldConfig['range']['upper'] ? (int)$fieldConfig['range']['upper'] : (int)$fieldValue;
+        }
         return $fieldValue;
+    }
+
+    /**
+     * Last sanitation method after all data has been gathered. Check integrity
+     * of full record, manipulate if possible, or throw exception if unfixable broken.
+     *
+     * @param array $newSysSiteData Incoming data
+     * @return array Updated data if needed
+     * @throws \RuntimeException
+     */
+    protected function validateFullStructure(array $newSysSiteData): array
+    {
+        // Verify there are not two error handlers with the same error code
+        if (isset($newSysSiteData['site']['errorHandling']) && is_array($newSysSiteData['site']['errorHandling'])) {
+            $uniqueCriteria = [];
+            $validChildren = [];
+            foreach ($newSysSiteData['site']['errorHandling'] as $child) {
+                if (!isset($child['errorCode'])) {
+                    throw new \RuntimeException('No errorCode found', 1521788518);
+                }
+                if (!in_array((int)$child['errorCode'], $uniqueCriteria, true)) {
+                    $uniqueCriteria[] = (int)$child['errorCode'];
+                    $validChildren[] = $child;
+                } else {
+                    // @todo localize
+                    $message = 'Two error handler configurations for error code ' . $child['errorCode'] . ' fonud.'
+                        . ' This would be an invalid configuration, the dangling one has been removed.';
+                    $messageTitle = 'Duplicate error code removed.';
+                    $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                    $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                    $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                    $defaultFlashMessageQueue->enqueue($flashMessage);
+                }
+            }
+            $newSysSiteData['site']['errorHandling'] = $validChildren;
+        }
+
+        // Verify there is only one inline child per sys_language record configured.
+        if (!isset($newSysSiteData['site']['languages']) || !is_array($newSysSiteData['site']['languages']) || count($newSysSiteData['site']['languages']) < 1) {
+            throw new \RuntimeException(
+                'No default language definition found. The interface does not allow this. Aborting', 1521789306
+            );
+        }
+        $uniqueCriteria = [];
+        $validChildren = [];
+        foreach ($newSysSiteData['site']['languages'] as $child) {
+            if (!isset($child['languageId'])) {
+                throw new \RuntimeException('languageId not found', 1521789455);
+            }
+            if (!in_array((int)$child['languageId'], $uniqueCriteria, true)) {
+                $uniqueCriteria[] = (int)$child['languageId'];
+                $validChildren[] = $child;
+            } else {
+                // @todo localize
+                $message = 'Two language configurations for language ' . $child['languageId'] . ' fonud.'
+                    . ' This would be an invalid configuration, the dangling one has been removed.';
+                $messageTitle = 'Duplicate language configuration removed.';
+                $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                $defaultFlashMessageQueue->enqueue($flashMessage);
+            }
+        }
+        $newSysSiteData['site']['languages'] = $validChildren;
+
+        return $newSysSiteData;
     }
 
     /**

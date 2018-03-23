@@ -24,7 +24,12 @@ return [
             'label' => 'Error Status Code',
             'config' => [
                 'type' => 'input',
-                'eval' => 'required',
+                'eval' => 'required, trim, int',
+                'range' => [
+                    'lower' => 100,
+                    'upper' => 599,
+                ],
+                'default' => 404,
                 'valuePicker' => [
                     'mode' => '',
                     'items' => [
@@ -36,7 +41,7 @@ return [
                         [ 'any error not defined otherwise', '0', ],
                     ],
                 ],
-            ]
+            ],
         ],
         'errorHandler' => [
             'label' => 'How to handle errors',
