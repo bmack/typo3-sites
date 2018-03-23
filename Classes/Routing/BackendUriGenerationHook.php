@@ -70,5 +70,6 @@ class BackendUriGenerationHook implements SingletonInterface
                 }
             }
         }
+        return $previewUrl;
     }
 }
