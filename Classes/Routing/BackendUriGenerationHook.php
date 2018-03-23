@@ -56,19 +56,14 @@ class BackendUriGenerationHook implements SingletonInterface
     {
         // Check if the page (= its rootline) has a site attached, otherwise just keep the URL as is
         $rootLine = $rootLine ?? BackendUtility::BEgetRootLine($pageUid);
-        foreach ($rootLine as $pageInRootLine) {
-            if ($pageInRootLine['uid'] > 0) {
-                try {
-                    $site = $this->siteFinder->getSiteByRootPageId($pageInRootLine['uid']);
-                    // Create a multi-dimensional array out of the additional get vars
-                    $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
-                    $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);
-                    return (string)$uriBuilder->buildUri($pageUid, $additionalGetVars, $anchorSection, ['rootLine' => $rootLine], $uriBuilder::ABSOLUTE_URL);
-                } catch (SiteNotFoundException $e) {
-                    return $previewUrl;
-                }
-            }
+        try {
+            $site = $this->siteFinder->getSiteByPageId((int)$pageUid, $rootLine);
+            // Create a multi-dimensional array out of the additional get vars
+            $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
+            $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);
+            return (string)$uriBuilder->buildUri($pageUid, $additionalGetVars, $anchorSection, ['rootLine' => $rootLine], $uriBuilder::ABSOLUTE_URL);
+        } catch (SiteNotFoundException $e) {
+            return $previewUrl;
         }
-        return $previewUrl;
     }
 }

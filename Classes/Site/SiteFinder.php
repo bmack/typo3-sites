@@ -16,6 +16,8 @@ namespace TYPO3\CMS\Sites\Site;
  */
 
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\Entity\Site;
@@ -87,6 +89,10 @@ class SiteFinder
         throw new SiteNotFoundException('No site found for root page id ' . $rootPageId, 1521668882);
     }
 
+    /**
+     * @param string $uri
+     * @return mixed|null
+     */
     public function getSiteLanguageByBase(string $uri)
     {
         $baseUris = $this->getBaseUris();
@@ -112,5 +118,44 @@ class SiteFinder
             return $this->sites[$identifier];
         }
         throw new SiteNotFoundException('No site found for identifier ' . $identifier, 1521716628);
+    }
+
+    /**
+     * Traverses the rootline of a page up until a Site was found.
+     *
+     * @param int $pageId
+     * @param array $alternativeRootLine
+     * @return Site
+     */
+    public function getSiteByPageId(int $pageId, array $alternativeRootLine = null): Site
+    {
+        if (is_array($alternativeRootLine)) {
+            foreach ($alternativeRootLine as $pageInRootLine) {
+                if ($pageInRootLine['uid'] > 0) {
+                    try {
+                        return $this->getSiteByRootPageId((int)$pageInRootLine['uid']);
+                    } catch (SiteNotFoundException $e) {
+                        // continue looping
+                    }
+                }
+            }
+        }
+        // Do your own rootline traversing
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('pages');
+        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+        $queryBuilder->select('pid')->from('pages');
+        $rootLinePageId = $pageId;
+        while ($rootLinePageId > 0) {
+            try {
+                return $this->getSiteByRootPageId($rootLinePageId);
+            } catch (SiteNotFoundException $e) {
+                // get parent page ID
+                $queryBuilder->where(
+                    $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($rootLinePageId))
+                );
+                $rootLinePageId = (int)$queryBuilder->execute()->fetchColumn(0);
+            }
+        }
+        throw new SiteNotFoundException('No site found in rootline of page  ' . $pageId, 1521716622);
     }
 }

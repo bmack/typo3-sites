@@ -16,7 +16,6 @@ namespace TYPO3\CMS\Sites\Routing;
  */
 
 use Psr\Http\Message\UriInterface;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
@@ -68,15 +67,18 @@ class PageUriBuilder
     public function buildUri(int $pageId, array $queryParameters = [], string $fragment = null, array $options = [], $referenceType = self::ABSOLUTE_PATH): UriInterface
     {
         // Resolve site
-        $site = $this->getSiteForPage($pageId, $options['rootLine'] ?? null);
         // If something is found, use /en/?id=123&additionalParams
         $languageId = (int)($options['language'] ?? $queryParameters['L'] ?? 0);
         $siteLanguage = null;
-        if ($site) {
-            // Resolve language (based on the options / query parameters, and remove it from GET variables,
-            // as the language is determined by the language path
-            unset($queryParameters['L']);
-            $siteLanguage = $site->getLanguageById($languageId);
+        try {
+            $site = $this->siteFinder->getSiteByPageId($pageId, $options['rootLine'] ?? null);
+            if ($site) {
+                // Resolve language (based on the options / query parameters, and remove it from GET variables,
+                // as the language is determined by the language path
+                unset($queryParameters['L']);
+                $siteLanguage = $site->getLanguageById($languageId);
+            }
+        } catch (SiteNotFoundException $e) {
         }
         // Only if a language is configured for the site, build a new site URL.
         if ($siteLanguage) {
@@ -106,22 +108,5 @@ class PageUriBuilder
     {
         $query = http_build_query($queryParameters, '', '&', PHP_QUERY_RFC3986);
         return new Uri(GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . 'index.php?id=' . $pageId . $query);
-    }
-
-    /**
-     * @param int $pageId
-     * @param array|null $fullRootLine
-     * @return null|\TYPO3\CMS\Sites\Site\Site
-     */
-    protected function getSiteForPage(int $pageId, array $fullRootLine = null)
-    {
-        $fullRootLine = $fullRootLine !== null ? $fullRootLine : BackendUtility::BEgetRootline($pageId);
-        foreach ($fullRootLine as $pageRecord) {
-            try {
-                return $this->siteFinder->getSiteByRootPageId((int)$pageRecord['uid']);
-            } catch (SiteNotFoundException $e) {
-            }
-        }
-        return null;
     }
 }
