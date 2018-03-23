@@ -23,7 +23,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\Entity\Site;
 use TYPO3\CMS\Sites\Site\SiteFinder;
-use TYPO3\CMS\Sites\Site\SiteLanguage;
+use TYPO3\CMS\Sites\Site\Entity\SiteLanguage;
 
 /**
  * Identify the current request and resolve the site to it.
@@ -31,7 +31,7 @@ use TYPO3\CMS\Sites\Site\SiteLanguage;
  * - language configuration
  * - site configuration
  *
- * Ideally, properties like config.sys_language_uid and config.language is then pre-set if not overriden via TypoScript.
+ * Properties like config.sys_language_uid and config.language is then set for TypoScript.
  */
 class SiteResolver implements MiddlewareInterface
 {
@@ -45,19 +45,29 @@ class SiteResolver implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $finder = GeneralUtility::makeInstance(SiteFinder::class);
-        $pageId = $request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0;
-        // 1. Check if there is a site language, if not, just don't do anything
-        $language = $finder->getSiteLanguageByBase((string)$request->getUri());
-        $site = null;
-        if ($language) {
-            $site = $language->getSite();
-        } elseif ($pageId) {
-            // 2. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
-            // @todo: loop over the whole rootline without permissions to get the actual site information
-            try {
-                $site = $finder->getSiteByRootPageId($pageId);
-            } catch (SiteNotFoundException $e) {
 
+        $site = null;
+        $language = null;
+
+        $pageId = $request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0;
+        $languageId = $request->getQueryParams()['L'] ?? $request->getParsedBody()['L'] ?? null;
+
+        // 1. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
+        if ($pageId) {
+            // Loop over the whole rootline without permissions to get the actual site information
+            try {
+                $site = $finder->getSiteByPageId($pageId);
+                if ($languageId) {
+                    $language = $site->getLanguageById($languageId);
+                }
+            } catch (SiteNotFoundException $e) {
+            }
+        } else {
+            // 2. Check if there is a site language, if not, just don't do anything
+            $language = $finder->getSiteLanguageByBase((string)$request->getUri());
+            // @todo: use exception for getSiteLanguageByBase
+            if ($language) {
+                $site = $language->getSite();
             }
         }
 
@@ -76,10 +86,16 @@ class SiteResolver implements MiddlewareInterface
 
             // Yes, hook into TSFE after TypoScript is parsed, baby.
             // Ensure that TYPO3 can deal with /en/ but keeps the original behaviour for deep links.
-            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['configArrayPostProc'][] = function($param) use ($request, $site, $language) {
+            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['configArrayPostProc'][] = function($param) use ($language) {
                 $param['config']['absRefPrefix'] = 'auto';
+                $param['config']['language'] = $language->getTypo3Language();
                 $param['config']['sys_language_uid'] = $language->getLanguageId();
                 $param['config']['sys_language_mode'] = $language->getFallbackType();
+            };
+            // Ensure the language base is used for the hash base calculation as well, otherwise TypoScript and page-related rendering
+            // is not cached properly as we don't have any language-specific conditions anymore
+            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['createHashBase'][] = function($param) use ($language) {
+                $params['hashParameters']['site'] = $language->getBase();
             };
         }
         return $handler->handle($request);
