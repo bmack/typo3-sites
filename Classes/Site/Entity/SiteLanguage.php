@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace TYPO3\CMS\Sites\Site;
+namespace TYPO3\CMS\Sites\Site\Entity;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -65,7 +65,7 @@ class SiteLanguage
      *
      * @var string
      */
-    protected $labelFileLocale;
+    protected $typo3Language;
 
     /**
      * @var string
@@ -99,7 +99,7 @@ class SiteLanguage
         $this->attributes = $attributes;
         $this->title = $attributes['title'] ?: 'Default';
         $this->flagIdentifier = $attributes['flag'] ?: 'gb';
-        $this->labelFileLocale = $attributes['xlf'] ?: 'default';
+        $this->typo3Language = $attributes['typo3Language'] ?: 'default';
         $this->fallbackType = $attributes['fallbackType'] ?: 'strict';
         $this->fallbackLanguageIds = $attributes['fallbacks'] ?: [];
     }
@@ -155,9 +155,9 @@ class SiteLanguage
     /**
      * @return string
      */
-    public function getLabelFileLocale(): string
+    public function getTypo3Language(): string
     {
-        return $this->labelFileLocale;
+        return $this->typo3Language;
     }
 
     /**

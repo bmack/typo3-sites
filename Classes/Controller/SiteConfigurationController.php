@@ -26,13 +26,12 @@ use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Sites\Exception\SiteValidationErrorException;
-use TYPO3\CMS\Sites\Site\Site;
-use TYPO3\CMS\Sites\Site\SiteReader;
+use TYPO3\CMS\Sites\Site\Entity\Site;
+use TYPO3\CMS\Sites\Site\SiteFinder;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Imaging\Icon;
@@ -62,13 +61,13 @@ class SiteConfigurationController
     protected $view;
 
     /**
-     * @var SiteReader
+     * @var SiteFinder
      */
-    protected $siteReader;
+    protected $siteFinder;
 
     public function __construct()
     {
-        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+        $this->siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
     }
 
     /**
@@ -100,7 +99,7 @@ class SiteConfigurationController
         $this->configureOverViewDocHeader();
         $unmappedSiteConfiguration = [];
         /** @var Site[] $allSites */
-        $allSites = $this->siteReader->getAllSites();
+        $allSites = $this->siteFinder->getAllSites();
         $pages = $this->getAllSitePages();
         foreach ($allSites as $identifier => $site) {
             $rootPageId = $site->getRootPageId();
@@ -142,7 +141,7 @@ class SiteConfigurationController
             $defaultValues['sys_site']['rootPageId'] = $pageUid;
         }
 
-        $allSites = $this->siteReader->getAllSites();
+        $allSites = $this->siteFinder->getAllSites();
         if (!$isNewConfig && !isset($allSites[$siteIdentifier])) {
             throw new \RuntimeException('Existing config for site ' . $siteIdentifier . ' not found', 1521561226);
         }
@@ -214,7 +213,7 @@ class SiteConfigurationController
         $isNewConfiguration = false;
         $currentIdentifier = '';
         try {
-            $currentSite = $this->siteReader->getSiteByRootPageId($pageId);
+            $currentSite = $this->siteFinder->getSiteByRootPageId($pageId);
             $currentSiteConfiguration = $currentSite->getConfiguration();
             $currentIdentifier = $currentSite->getIdentifier();
         } catch (SiteNotFoundException $e) {
@@ -319,7 +318,7 @@ class SiteConfigurationController
             // Verify no other site with this identifier exists. If so, find a new unique name as
             // identifier and show a flash message the identifier has been adapted
             try {
-                $this->siteReader->getSiteByIdentifier($identifier);
+                $this->siteFinder->getSiteByIdentifier($identifier);
                 // Force this identifier to be unique
                 $originalIdentifier = $identifier;
                 $identifier = $identifier . '-' . str_replace('.', '', uniqid((string)mt_rand(), true));
@@ -339,10 +338,10 @@ class SiteConfigurationController
             // a user tried to rename a site identifier to a different site that already exists. If so, we do not rename
             // the site and show a flash message
             try {
-                $site = $this->siteReader->getSiteByIdentifier($identifier);
+                $site = $this->siteFinder->getSiteByIdentifier($identifier);
                 if ($site->getRootPageId() !== $rootPageId) {
                     // Find original value and keep this
-                    $origSite = $this->siteReader->getSiteByRootPageId($rootPageId);
+                    $origSite = $this->siteFinder->getSiteByRootPageId($rootPageId);
                     $originalIdentifier = $identifier;
                     $identifier = $origSite->getIdentifier();
                     // @todo localize
@@ -495,7 +494,7 @@ class SiteConfigurationController
             throw new \RuntimeException('Not site identifier given', 1521565182);
         }
         // Verify site does exist, method throws if not
-        $this->siteReader->getSiteByIdentifier($siteIdentifier);
+        $this->siteFinder->getSiteByIdentifier($siteIdentifier);
         GeneralUtility::rmdir(PATH_site . 'typo3conf/sites/' . $siteIdentifier, true);
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $overviewRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'overview']);

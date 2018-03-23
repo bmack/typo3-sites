@@ -17,11 +17,10 @@ namespace TYPO3\CMS\Sites\Routing;
 
 use Psr\Http\Message\UriInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
-use TYPO3\CMS\Sites\Site\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteFinder;
 
 /**
  * Responsible for generates URLs to pages which are NOT bound to any permissions or frontend restrictions.
@@ -44,16 +43,16 @@ class PageUriBuilder
     const ABSOLUTE_PATH = 'path';
 
     /**
-     * @var SiteReader
+     * @var SiteFinder
      */
-    protected $siteReader;
+    protected $siteFinder;
 
     /**
      * PageUriBuilder constructor.
      */
     public function __construct()
     {
-        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+        $this->siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
     }
 
     /**
@@ -119,7 +118,7 @@ class PageUriBuilder
         $fullRootLine = $fullRootLine !== null ? $fullRootLine : BackendUtility::BEgetRootline($pageId);
         foreach ($fullRootLine as $pageRecord) {
             try {
-                return $this->siteReader->getSiteByRootPageId((int)$pageRecord['uid']);
+                return $this->siteFinder->getSiteByRootPageId((int)$pageRecord['uid']);
             } catch (SiteNotFoundException $e) {
             }
         }

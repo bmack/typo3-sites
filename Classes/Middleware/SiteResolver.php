@@ -19,12 +19,11 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
-use TYPO3\CMS\Sites\Site\Site;
+use TYPO3\CMS\Sites\Site\Entity\Site;
+use TYPO3\CMS\Sites\Site\SiteFinder;
 use TYPO3\CMS\Sites\Site\SiteLanguage;
-use TYPO3\CMS\Sites\Site\SiteReader;
 
 /**
  * Identify the current request and resolve the site to it.
@@ -45,10 +44,10 @@ class SiteResolver implements MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $reader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+        $finder = GeneralUtility::makeInstance(SiteFinder::class);
         $pageId = $request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0;
         // 1. Check if there is a site language, if not, just don't do anything
-        $language = $reader->getSiteLanguageByBase((string)$request->getUri());
+        $language = $finder->getSiteLanguageByBase((string)$request->getUri());
         $site = null;
         if ($language) {
             $site = $language->getSite();
@@ -56,8 +55,9 @@ class SiteResolver implements MiddlewareInterface
             // 2. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
             // @todo: loop over the whole rootline without permissions to get the actual site information
             try {
-                $site = $reader->getSiteByRootPageId($pageId);
+                $site = $finder->getSiteByRootPageId($pageId);
             } catch (SiteNotFoundException $e) {
+
             }
         }
 

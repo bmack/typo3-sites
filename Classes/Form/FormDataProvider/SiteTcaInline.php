@@ -24,14 +24,13 @@ use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
 use TYPO3\CMS\Backend\Form\InlineStackProcessor;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Database\RelationHandler;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Versioning\VersionState;
-use TYPO3\CMS\Sites\Site\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteFinder;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
 
 /**
@@ -138,8 +137,8 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
         $connectedUids = [];
         if ($result['command'] === 'edit') {
             $siteConfigurationForPageUid = (int)$result['databaseRow']['rootPageId'][0];
-            $siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
-            $site = $siteReader->getSiteByRootPageId($siteConfigurationForPageUid);
+            $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
+            $site = $siteFinder->getSiteByRootPageId($siteConfigurationForPageUid);
             $siteConfiguration = $site ? $site->getConfiguration() : [];
             if (is_array($siteConfiguration[$fieldName])) {
                 $connectedUids = array_keys($siteConfiguration[$fieldName]);

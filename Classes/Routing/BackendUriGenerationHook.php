@@ -16,11 +16,10 @@ namespace TYPO3\CMS\Sites\Routing;
  */
 
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
-use TYPO3\CMS\Sites\Site\SiteReader;
+use TYPO3\CMS\Sites\Site\SiteFinder;
 
 /**
  * Hooks in the viewOnClick() logic in the TYPO3 Backend.
@@ -30,16 +29,16 @@ use TYPO3\CMS\Sites\Site\SiteReader;
 class BackendUriGenerationHook implements SingletonInterface
 {
     /**
-     * @var SiteReader
+     * @var SiteFinder
      */
-    protected $siteReader;
+    protected $siteFinder;
 
     /**
      * BackendUriGenerationHook constructor.
      */
     public function __construct()
     {
-        $this->siteReader = GeneralUtility::makeInstance(SiteReader::class, Environment::getConfigPath() . '/sites');
+        $this->siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
     }
 
     /**
@@ -60,7 +59,7 @@ class BackendUriGenerationHook implements SingletonInterface
         foreach ($rootLine as $pageInRootLine) {
             if ($pageInRootLine['uid'] > 0) {
                 try {
-                    $site = $this->siteReader->getSiteByRootPageId($pageInRootLine['uid']);
+                    $site = $this->siteFinder->getSiteByRootPageId($pageInRootLine['uid']);
                     // Create a multi-dimensional array out of the additional get vars
                     $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
                     $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);

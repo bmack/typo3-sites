@@ -15,18 +15,16 @@ namespace TYPO3\CMS\Sites\Site;
  * The TYPO3 project - inspiring people to share!
  */
 
-use Symfony\Component\Finder\Finder;
-use TYPO3\CMS\Core\Configuration\Loader\YamlFileLoader;
-use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
+use TYPO3\CMS\Sites\Site\Entity\Site;
+use TYPO3\CMS\Sites\Site\Entity\SiteLanguage;
 
 /**
- * Reads all available site configuration options, and puts them into Site objects.
- *
- * Is used for all places where to read / identify sites.
+ * Is used for all places where to read / identify sites and site languages.
  */
-class SiteReader
+class SiteFinder
 {
     /**
      * @var Site[]
@@ -40,20 +38,14 @@ class SiteReader
     protected $mappingRootPageIdToIdentifier = [];
 
     /**
-     * @param string $configurationPath
      */
-    public function __construct(string $configurationPath)
+    public function __construct()
     {
-        $finder = new Finder();
-        $finder->files()->depth(0)->name('config.yaml')->in($configurationPath . '/*');
-        $loader = GeneralUtility::makeInstance(YamlFileLoader::class);
-        $languageRecords = $this->getAllLanguageRecords();
-        foreach ($finder as $fileInfo) {
-            $configuration = $loader->load((string)$fileInfo);
-            $identifier = basename($fileInfo->getPath());
-            $rootPageId = (int)$configuration['site']['rootPageId'] ?? $configuration['site']['rootpageId'];
-            $this->sites[$identifier] = new Site($identifier, $rootPageId, $configuration['site'], $languageRecords);
-            $this->mappingRootPageIdToIdentifier[$rootPageId] = $identifier;
+        $reader = GeneralUtility::makeInstance(SiteConfigurationManager::class, Environment::getConfigPath() . '/sites');
+        $siteConfigurations = $reader->resolveAllExistingSites();
+        foreach ($siteConfigurations as $identifier => $site) {
+            $this->sites[$identifier] = $site;
+            $this->mappingRootPageIdToIdentifier[$site->getRootPageId()] = $identifier;
         }
     }
 
@@ -121,21 +113,4 @@ class SiteReader
         }
         throw new SiteNotFoundException('No site found for identifier ' . $identifier, 1521716628);
     }
-
-    /**
-     *
-     */
-    protected function getAllLanguageRecords(): array
-    {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('sys_language');
-        $queryBuilder->getRestrictions()->removeAll();
-        $statement = $queryBuilder->select('*')->from('sys_language')->orderBy('sorting')->execute();
-        $languageRecords = [];
-        while ($row = $statement->fetch()) {
-            $languageRecords[(int)$row['uid']] = $row;
-        }
-        return $languageRecords;
-    }
-
 }

@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace TYPO3\CMS\Sites\Site;
+namespace TYPO3\CMS\Sites\Site\Entity;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -46,12 +46,19 @@ class Site
      */
     protected $languages;
 
-    public function __construct(string $identifier, int $rootPageId, array $attributes, array $languageRecords = [])
+    public function __construct(string $identifier, int $rootPageId, array $attributes)
     {
         $this->identifier = $identifier;
         $this->rootPageId = $rootPageId;
         $this->configuration = $attributes;
-        $attributes['languages'] = $attributes['languages'] ?: [0 => ['languageId' => 0]];
+        $attributes['languages'] = $attributes['languages'] ?: [0 => [
+            'languageId' => 0,
+            'title' => 'Default',
+            'typo3Language' => 'default',
+            'flag' => 'us',
+            'locale' => 'en_US.UTF-8',
+            'iso-639-1' => 'en'
+        ]];
         $this->base = $attributes['base'] ?? '';
         foreach ($attributes['languages'] as $languageConfiguration) {
             $languageUid = (int)$languageConfiguration['languageId'];
@@ -60,22 +67,10 @@ class Site
             if (!$baseParts['scheme']) {
                 $base = rtrim($this->base, '/') . '/' . ltrim($base, '/');
             }
-            if ((int)$languageConfiguration['languageId'] === 0) {
-                $languageConfiguration['locale'] = $attributes['defaultLocale'] ?? 'en_US';
-                $languageConfiguration['title'] = $attributes['defaultLanguageLabel'] ?? 'Default';
-                $languageConfiguration['flag'] = $attributes['defaultLanguageFlag'] ?? 'us';
-                $languageConfiguration['xlf'] = $attributes['defaultLanguage'] ?? 'default';
-                $languageConfiguration['iso639-1'] = $attributes['defaultLanguageIsoCode'] ?? 'en';
-            } else {
-                // @todo: what to do if no sys_language record was found?
-                $languageConfiguration['title']    = $languageRecords[$languageUid]['title'];
-                $languageConfiguration['flag']     = $languageRecords[$languageUid]['flag'];
-                $languageConfiguration['iso639-1'] = $languageRecords[$languageUid]['language_isocode'];
-            }
             $this->languages[$languageUid] = new SiteLanguage(
                 $this,
                 $languageUid,
-                $languageConfiguration['locale'] ?? '',
+                $languageConfiguration['locale'],
                 $base,
                 $languageConfiguration
             );

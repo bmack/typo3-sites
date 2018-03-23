@@ -20,6 +20,9 @@ Done:
 - Create a "Site" object containing all values of a site
 - Create a PSR-15 middleware to find the correct site
 - Create Links to the frontend from backend
+- Tree-based view of sites in BE module
+- FormEngine: Required fields
+- FormEngine: Validate identifier
 
 ToDo:
 - Use site + language logic in frontend links
@@ -29,10 +32,7 @@ ToDo:
 - Handle fallback logic of fallbackTypes in Languages
 - Create API to persist files into folder (also ensure that the folder always exists)
 - Cleanup BE module (labels etc)
-- Tree-based view of sites in BE module
 - Comment all code
-- FormEngine: Required section?
-- FormEngine: Valid identifier etc?
 - FormEngine: Cleanup "SiteConfigurationTCA" logic (do we need a ctrl section?)
 
 Resolves: #?
