@@ -343,6 +343,7 @@ return [
         ],
         'fallbackType' => [
             'label' => 'Fallback type',
+            'displayCond' => 'FIELD:languageId:>:0',
             'onChange' => 'reload',
             'config' => [
                 'type' => 'select',
