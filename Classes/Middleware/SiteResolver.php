@@ -19,6 +19,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3\CMS\Sites\Site\Entity\Site;
@@ -53,13 +54,11 @@ class SiteResolver implements MiddlewareInterface
         $languageId = $request->getQueryParams()['L'] ?? $request->getParsedBody()['L'] ?? null;
 
         // 1. Check if we have a _GET/_POST parameter for "id", then a site information can be resolved based.
-        if ($pageId) {
+        if ($pageId && $languageId) {
             // Loop over the whole rootline without permissions to get the actual site information
             try {
-                $site = $finder->getSiteByPageId($pageId);
-                if ($languageId) {
-                    $language = $site->getLanguageById($languageId);
-                }
+                $site = $finder->getSiteByPageId((int)$pageId);
+                $language = $site->getLanguageById($languageId);
             } catch (SiteNotFoundException $e) {
             }
         } else {
@@ -94,10 +93,31 @@ class SiteResolver implements MiddlewareInterface
             };
             // Ensure the language base is used for the hash base calculation as well, otherwise TypoScript and page-related rendering
             // is not cached properly as we don't have any language-specific conditions anymore
-            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['createHashBase'][] = function($param) use ($language) {
-                $params['hashParameters']['site'] = $language->getBase();
+            $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['createHashBase'][] = function($params) use ($language) {
+                $params['hashParameters']['sitebase'] = $language->getBase();
             };
         }
+        $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tstemplate.php']['linkData-PostProc'][] = function($params) use ($request, $finder) {
+            $pageId = (int)$params['args']['page']['uid'];
+            try {
+                $currentHost = $request->getUri()->getHost();
+                $site = $finder->getSiteByPageId($pageId);
+                $targetLanguageId = $GLOBALS['TSFE']->sys_language_uid;
+                $targetUri = new Uri($params['LD']['totalURL']);
+                if ($targetUri->getQuery()) {
+                    $targetQueryParts = GeneralUtility::explodeUrl2Array($targetUri->getQuery(), true);
+                    $targetLanguageId = (int)($targetQueryParts['L'] ?? $targetLanguageId);
+                    $targetQueryParts['L'] = $targetLanguageId;
+                    $targetUri = $targetUri->withQuery(http_build_query($targetQueryParts, '', '&', PHP_QUERY_RFC3986));
+                    // todo: check the params, and exchange the base
+                    // but take the relative path into account
+                    #$targetSiteLanguage = $site->getLanguageById($targetLanguageId);
+                    #$targetBase = $targetSiteLanguage->getBase();
+                }
+                $params['LD']['totalURL'] = (string)$targetUri;
+            } catch (SiteNotFoundException $e) {
+            }
+        };
         return $handler->handle($request);
     }
 }

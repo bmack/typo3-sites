@@ -40,6 +40,7 @@ class SiteFinder
     protected $mappingRootPageIdToIdentifier = [];
 
     /**
+     * Fetches all existing configurations as Site objects
      */
     public function __construct()
     {
