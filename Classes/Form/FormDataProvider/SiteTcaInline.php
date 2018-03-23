@@ -170,7 +170,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
             // If edit, find out if a child using sys_language "0" exists, else add it on top
             $defaultSysSiteLanguageChildFound = false;
             foreach ($result['processedTca']['columns'][$fieldName]['children'] as $child) {
-                if (isset($child['databaseRow']['languageId']) && (int)$child['databaseRow']['languageId'] == 0) {
+                if (isset($child['databaseRow']['languageId']) && (int)$child['databaseRow']['languageId'][0] == 0) {
                     $defaultSysSiteLanguageChildFound = true;
                 }
             }
