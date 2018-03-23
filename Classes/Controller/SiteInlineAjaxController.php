@@ -21,6 +21,8 @@ use TYPO3\CMS\Backend\Controller\AbstractFormEngineAjaxController;
 use TYPO3\CMS\Backend\Form\FormDataCompiler;
 use TYPO3\CMS\Backend\Form\InlineStackProcessor;
 use TYPO3\CMS\Backend\Form\NodeFactory;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\ArrayUtility;
 use TYPO3\CMS\Core\Utility\MathUtility;
@@ -73,12 +75,40 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         }
         $childTableName = $parentConfig['foreign_table'];
 
+        $defaultDatabaseRow = [];
+        if ($childTableName === 'sys_site_language') {
+            // Feed new sys_site_language row with data from sys_language record if possible
+            //$defaultDatabaseRow['title'] = 'aoeu42';
+            if ($childChildUid > 0) {
+                $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('sys_language');
+                $queryBuilder->getRestrictions()->removeByType(HiddenRestriction::class);
+                $row = $queryBuilder->select('*')->from('sys_language')
+                    ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($childChildUid, \PDO::PARAM_INT)))
+                    ->execute()->fetch();
+                if (empty($row)) {
+                    throw new \RuntimeException('Referenced sys_language row not found', 1521783937);
+                }
+                if (!empty($row['language_isocode'])) {
+                    $defaultDatabaseRow['iso-639-1'] = $row['language_isocode'];
+                }
+                if (!empty($row['flag']) && $row['flag'] === 'multiple') {
+                    $defaultDatabaseRow['flag'] = 'global';
+                } elseif (!empty($row)) {
+                    $defaultDatabaseRow['flag'] = $row['flag'];
+                }
+                if (!empty($row['title'])) {
+                    $defaultDatabaseRow['title'] = $row['title'];
+                }
+            }
+        }
+
         $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
         $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
         $formDataCompilerInput = [
             'command' => 'new',
             'tableName' => $childTableName,
             'vanillaUid' => $childVanillaUid,
+            'databaseRow' => $defaultDatabaseRow,
             'isInlineChild' => true,
             'inlineStructure' => $inlineStackProcessor->getStructure(),
             'inlineFirstPid' => $inlineFirstPid,
