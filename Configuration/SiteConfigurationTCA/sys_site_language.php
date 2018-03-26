@@ -41,6 +41,15 @@ return [
                 'placeholder' => 'English',
             ]
         ],
+        'nav_title' => [
+            'label' => 'Language navigation title (localized e.g. "English", "Deutsch", "Français")',
+            'config' => [
+                'type' => 'input',
+                'size' => 50,
+                'eval' => 'trim',
+                'placeholder' => 'English',
+            ]
+        ],
         'base' => [
             'label' => 'Entry point (either https://www.mydomain.fr/ or /fr/)',
             'config' => [
@@ -53,7 +62,7 @@ return [
             'config' => [
                 'type' => 'input',
                 'eval' => 'required',
-                'placeholder' => 'fr_FR.UTF-8',
+                'placeholder' => 'en_US.UTF-8',
             ]
         ],
         'iso-639-1' => [
@@ -63,6 +72,30 @@ return [
                 'renderType' => 'selectSingle',
                 // Fed by data provider
                 'items' => [],
+                'itemsProcFunc' => \TYPO3\CMS\Core\Service\IsoCodeService::class . '->renderIsoCodeSelectDropdown',
+            ],
+        ],
+        'hrefLanguage' => [
+            'label' => 'Language locale',
+            'config' => [
+                'type' => 'input',
+                'eval' => 'required',
+                'placeholder' => 'en-US',
+            ]
+        ],
+        'direction' => [
+            'label' => 'Direction',
+            'config' => [
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'items' => [
+                    ['', 'None', ''],
+                    ['ltr', 'Left to right', ''],
+                    ['rtl', 'Right to left', '']
+                ],
+                'size' => 1,
+                'minitems' => 0,
+                'maxitems' => 1,
             ],
         ],
         'typo3Language' => [
@@ -372,7 +405,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'languageId, title, base, locale, iso-639-1, typo3Language, flag, fallbackType, fallbacks',
+            'showitem' => 'languageId, title, nav_title, base, locale, iso-639-1, hrefLanguage, direction, typo3Language, flag, fallbackType, fallbacks',
         ],
     ],
 ];
