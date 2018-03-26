@@ -41,6 +41,15 @@ return [
                 'placeholder' => 'English',
             ]
         ],
+        'nav_title' => [
+            'label' => 'Language navigation title (localized e.g. "English", "Deutsch", "Français")',
+            'config' => [
+                'type' => 'input',
+                'size' => 50,
+                'eval' => 'trim',
+                'placeholder' => 'English',
+            ]
+        ],
         'base' => [
             'label' => 'Entry point (either https://www.mydomain.fr/ or /fr/)',
             'config' => [
@@ -372,7 +381,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'languageId, title, base, locale, iso-639-1, typo3Language, flag, fallbackType, fallbacks',
+            'showitem' => 'languageId, title, nav_title, base, locale, iso-639-1, typo3Language, flag, fallbackType, fallbacks',
         ],
     ],
 ];
