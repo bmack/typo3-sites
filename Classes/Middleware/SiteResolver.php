@@ -77,7 +77,7 @@ class SiteResolver implements MiddlewareInterface
             $queryParams = $request->getQueryParams();
             // necessary to calculate the proper hash base
             $queryParams['L'] = $language->getLanguageId();
-            $request->withQueryParams($queryParams);
+            $request = $request->withQueryParams($queryParams);
             $_GET['L'] = $queryParams['L'];
             // At this point, we later get further route modifiers
             // for bw-compat we update $GLOBALS[TYPO3_REQUEST] and define stuff in TSFE.

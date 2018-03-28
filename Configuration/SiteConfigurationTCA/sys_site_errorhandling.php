@@ -51,13 +51,13 @@ return [
                 'items' => [
                     [' - select an handler type - ', ''],
                     ['Fluid Template', 'Fluid'],
-                    ['Show Content from Page','ContentFromPid'],
-                    ['PHP Function',   'ClassDispatcher'],
+                    ['Show Content from Page', 'Page'],
+                    ['PHP Class (must implement the PageErrorHandlerInterface)', 'PHP'],
                 ],
             ]
         ],
         'errorFluidTemplate' => [
-            'label' => 'Fluid Template File (use SITES:syntax if you like)',
+            'label' => 'Fluid Template File',
             'config' => [
                 'type' => 'input',
                 'eval' => 'required',
@@ -86,10 +86,10 @@ return [
         'Fluid' => [
             'showitem' => 'errorCode, errorHandler, errorFluidTemplate',
         ],
-        'ContentFromPid' => [
+        'Page' => [
             'showitem' => 'errorCode, errorHandler, errorContentSource',
         ],
-        'ClassDispatcher' => [
+        'PHP' => [
             'showitem' => 'errorCode, errorHandler, errorPhpClassFQCN',
         ],
     ],

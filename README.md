@@ -27,7 +27,7 @@ Done:
 ToDo:
 - Use site + language logic in frontend links
 - Implement fallback for &L= parameter
-- Build Error Handler functionality
+- Build Error Handler functionality into ErrorController
 - Add caching layer
 - Handle fallback logic of fallbackTypes in Languages
 - Create API to persist files into folder (also ensure that the folder always exists)
