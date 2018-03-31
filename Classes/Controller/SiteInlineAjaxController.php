@@ -31,21 +31,27 @@ use TYPO3\CMS\Sites\Configuration\SiteTcaConfiguration;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
 
 /**
- * FormEngine "edit" and "new" site configuration inline ajax related methods
+ * Site configuration FormEngine controller class. Receives inline "edit" and "new"
+ * commands to expand / create site configuration inline records
  */
 class SiteInlineAjaxController extends AbstractFormEngineAjaxController
 {
-
+    /**
+     * Default constructor
+     */
     public function __construct()
     {
+        // Bring site TCA into global scope.
+        // @todo: We might be able to get rid of that later
         $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
     }
 
     /**
-     * Inline "create" new child
+     * Inline "create" new child of site configuration child records
      *
      * @param ServerRequestInterface $request
      * @return ResponseInterface
+     * @throws \RuntimeException
      */
     public function newInlineChildAction(ServerRequestInterface $request): ResponseInterface
     {
@@ -78,7 +84,6 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         $defaultDatabaseRow = [];
         if ($childTableName === 'sys_site_language') {
             // Feed new sys_site_language row with data from sys_language record if possible
-            //$defaultDatabaseRow['title'] = 'aoeu42';
             if ($childChildUid > 0) {
                 $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('sys_language');
                 $queryBuilder->getRestrictions()->removeByType(HiddenRestriction::class);
@@ -126,30 +131,7 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
         $childData = $formDataCompiler->compile($formDataCompilerInput);
 
         if ($parentConfig['foreign_selector'] && $parentConfig['appearance']['useCombination']) {
-            // We have a foreign_selector. So, we just created a new record on an intermediate table in $childData.
-            // Now, if a valid id is given as second ajax parameter, the intermediate row should be connected to an
-            // existing record of the child-child table specified by the given uid. If there is no such id, user
-            // clicked on "created new" and a new child-child should be created, too.
-            if ($childChildUid) {
-                // Fetch existing child child
-                $childData['databaseRow'][$parentConfig['foreign_selector']] = [
-                    $childChildUid,
-                ];
-                $childData['combinationChild'] = $this->compileChildChild($childData, $parentConfig, $inlineStackProcessor->getStructure());
-            } else {
-                $formDataGroup = GeneralUtility::makeInstance(SiteFormDataGroup::class);
-                $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
-                $formDataCompilerInput = [
-                    'command' => 'new',
-                    'tableName' => $childData['processedTca']['columns'][$parentConfig['foreign_selector']]['config']['foreign_table'],
-                    'vanillaUid' => (int)$inlineFirstPid,
-                    'isInlineChild' => true,
-                    'isInlineAjaxOpeningContext' => true,
-                    'inlineStructure' => $inlineStackProcessor->getStructure(),
-                    'inlineFirstPid' => (int)$inlineFirstPid,
-                ];
-                $childData['combinationChild'] = $formDataCompiler->compile($formDataCompilerInput);
-            }
+            throw new \RuntimeException('useCombination not implemented in sites module', 1522493094);
         }
 
         $childData['inlineParentUid'] = (int)$parent['uid'];
@@ -190,10 +172,11 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
     }
 
     /**
-     * Show the details of a child record.
+     * Show the details of site configuration child records.
      *
      * @param ServerRequestInterface $request
      * @return ResponseInterface
+     * @throws \RuntimeException
      */
     public function openInlineChildAction(ServerRequestInterface $request): ResponseInterface
     {
@@ -277,15 +260,15 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
      * @param int $childUid Uid of child to compile
      * @param array $inlineStructure Current inline structure
      * @return array Full result array
+     * @throws \RuntimeException
      *
      * @todo: This clones methods compileChild from TcaInline Provider. Find a better abstraction
      * @todo: to also encapsulate the more complex scenarios with combination child and friends.
      */
-    protected function compileChild(array $parentData, $parentFieldName, $childUid, array $inlineStructure)
+    protected function compileChild(array $parentData, $parentFieldName, $childUid, array $inlineStructure): array
     {
         $parentConfig = $parentData['processedTca']['columns'][$parentFieldName]['config'];
 
-        /** @var InlineStackProcessor $inlineStackProcessor */
         $inlineStackProcessor = GeneralUtility::makeInstance(InlineStackProcessor::class);
         $inlineStackProcessor->initializeByGivenStructure($inlineStructure);
         $inlineTopMostParent = $inlineStackProcessor->getStructureLevel(0);
@@ -318,15 +301,10 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
             'inlineTopMostParentTableName' => $inlineTopMostParent['table'],
             'inlineTopMostParentFieldName' => $inlineTopMostParent['field'],
         ];
-        // For foreign_selector with useCombination $mainChild is the mm record
-        // and $combinationChild is the child-child. For "normal" relations, $mainChild
-        // is just the normal child record and $combinationChild is empty.
-        $mainChild = $formDataCompiler->compile($formDataCompilerInput);
         if ($parentConfig['foreign_selector'] && $parentConfig['appearance']['useCombination']) {
-            // This kicks in if opening an existing mainChild that has a child-child set
-            $mainChild['combinationChild'] = $this->compileChildChild($mainChild, $parentConfig, $inlineStructure);
+            throw new \RuntimeException('useCombination not implemented in sites module', 1522493095);
         }
-        return $mainChild;
+        return $formDataCompiler->compile($formDataCompilerInput);
     }
 
     /**
@@ -337,7 +315,7 @@ class SiteInlineAjaxController extends AbstractFormEngineAjaxController
      * @param array $childResult Given child result
      * @return array Merged json array
      */
-    protected function mergeChildResultIntoJsonResult(array $jsonResult, array $childResult)
+    protected function mergeChildResultIntoJsonResult(array $jsonResult, array $childResult): array
     {
         $jsonResult['data'] .= $childResult['html'];
         $jsonResult['stylesheetFiles'] = [];
