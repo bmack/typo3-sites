@@ -23,4 +23,5 @@ $iconRegistry->registerIcon(
     [ 'name' => 'code' ]
 );
 
-$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_befunc.php']['viewOnClickClass'][] = TYPO3\CMS\Sites\Routing\BackendUriGenerationHook::class;
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_befunc.php']['viewOnClickClass'][]
+    = TYPO3\CMS\Sites\Routing\BackendUriGenerationHook::class;

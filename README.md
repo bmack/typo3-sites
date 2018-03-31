@@ -32,7 +32,6 @@ ToDo:
 - Handle fallback logic of fallbackTypes in Languages
 - Create API to persist files into folder (also ensure that the folder always exists)
 - Cleanup BE module (labels etc)
-- Comment all code
 - FormEngine: Cleanup "SiteConfigurationTCA" logic (do we need a ctrl section?)
 
 Resolves: #?

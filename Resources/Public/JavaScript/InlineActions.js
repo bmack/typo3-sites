@@ -11,9 +11,11 @@
  * The TYPO3 project - inspiring people to share!
  */
 
+// Site configuration backend module FormEngine inline:
+// Override inline 'create' and 'details' route to point to SiteInlineAjaxController
 require(['jquery'], function($) {
-	$(function() {
-		TYPO3.inline.addMethod('create', 'site_configuration_inline_create');
-		TYPO3.inline.addMethod('details', 'site_configuration_inline_details');
-	});
+  $(function() {
+    TYPO3.inline.addMethod('create', 'site_configuration_inline_create');
+    TYPO3.inline.addMethod('details', 'site_configuration_inline_details');
+  });
 });
