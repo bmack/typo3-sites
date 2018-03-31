@@ -20,7 +20,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Sites\Site\SiteFinder;
 
 /**
- * Transfer "row" from ['customData']['siteData'] to ['databaseRow']
+ * Special data provider for the sites configuration module.
+ *
+ * Fetch "row" data from yml file and set as 'databaseRow'
  */
 class SiteDatabaseEditRow implements FormDataProviderInterface
 {
@@ -31,7 +33,7 @@ class SiteDatabaseEditRow implements FormDataProviderInterface
      * @return array
      * @throws \RuntimeException
      */
-    public function addData(array $result)
+    public function addData(array $result): array
     {
         if ($result['command'] !== 'edit' || !empty($result['databaseRow'])) {
             return $result;
@@ -49,17 +51,12 @@ class SiteDatabaseEditRow implements FormDataProviderInterface
             $rowData = $siteFinder->getSiteByRootPageId($siteConfigurationForPageUid)->getConfiguration();
             $parentFieldName = $result['inlineParentFieldName'];
             if (!isset($rowData[$parentFieldName])) {
-                throw new \RuntimeException(
-                    'Field ' . $parentFieldName . ' not found',
-                    1520886092
-                );
+                throw new \RuntimeException('Field ' . $parentFieldName . ' not found',  1520886092);
             }
             $rowData = $rowData[$parentFieldName][$result['vanillaUid']];
             $result['databaseRow']['uid'] = $result['vanillaUid'];
         } else {
-            throw new \RuntimeException(
-                'Other tables not implemented', 1520886234
-            );
+            throw new \RuntimeException('Other tables not implemented', 1520886234);
         }
 
         foreach ($rowData as $fieldName => $value) {
@@ -68,7 +65,7 @@ class SiteDatabaseEditRow implements FormDataProviderInterface
                 $result['databaseRow'][$fieldName] = $value;
             }
         }
-        // All "records" are on pid 0
+        // All "records" are always on pid 0
         $result['databaseRow']['pid'] = 0;
         return $result;
     }

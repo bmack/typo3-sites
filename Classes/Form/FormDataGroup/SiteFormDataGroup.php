@@ -24,6 +24,9 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  *
  * This data group is for data fetched from sites yml files,
  * it is fed by "fake TCA" since there are no real db records.
+ *
+ * It's similar to "fullDatabaseRecord", with some unused TCA types
+ * kicked out and some own data providers for record data and inline handling.
  */
 class SiteFormDataGroup implements FormDataGroupInterface
 {
@@ -47,11 +50,6 @@ class SiteFormDataGroup implements FormDataGroupInterface
             \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseParentPageRow::class => [
                 'depends' => [
                     \TYPO3\CMS\Sites\Form\FormDataProvider\SiteDatabaseEditRow::class,
-                ],
-            ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseDefaultLanguagePageRow::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseParentPageRow::class,
                 ],
             ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseUserPermissionCheck::class => [
@@ -135,21 +133,8 @@ class SiteFormDataGroup implements FormDataGroupInterface
                     \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseRecordOverrideValues::class,
                 ],
             ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\DatabasePageLanguageOverlayRows::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseSystemLanguageRows::class
-                ],
-            ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseLanguageRows::class => [
-                'depends' => [
-                    // Language stuff depends on user ts, but it *may* also depend on new row defaults
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseRowInitializeNew::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\DatabasePageLanguageOverlayRows::class,
-                ],
-            ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseRecordTypeValue::class => [
                 'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\DatabaseLanguageRows::class,
                     // As the ctrl.type can hold a nested key we need to resolve all relations
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaGroup::class,
                 ],
@@ -214,24 +199,10 @@ class SiteFormDataGroup implements FormDataGroupInterface
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaTypesShowitem::class,
                 ],
             ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexPrepare::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\InitializeProcessedTca::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\UserTsConfig::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\PageTsConfigMerged::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaColumnsRemoveUnused::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaColumnsProcessFieldLabels::class,
-                ],
-            ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexProcess::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexPrepare::class,
-                ],
-            ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\TcaText::class => [
                 'depends' => [
                     \TYPO3\CMS\Backend\Form\FormDataProvider\InitializeProcessedTca::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexProcess::class,
+                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaColumnsProcessFieldLabels::class,
                 ],
             ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\TcaRadioItems::class => [
@@ -259,18 +230,12 @@ class SiteFormDataGroup implements FormDataGroupInterface
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaTypesShowitem::class,
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaColumnsRemoveUnused::class,
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaCheckboxItems::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaFlexPrepare::class,
                     \TYPO3\CMS\Sites\Form\FormDataProvider\SiteTcaSelectItems::class,
-                ],
-            ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectTreeItems::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectItems::class,
                 ],
             ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInlineConfiguration::class => [
                 'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectTreeItems::class,
+                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectItems::class,
                 ],
             ],
             \TYPO3\CMS\Sites\Form\FormDataProvider\SiteTcaInline::class => [
@@ -283,15 +248,10 @@ class SiteFormDataGroup implements FormDataGroupInterface
                     \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInlineConfiguration::class,
                 ],
             ],
-            \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInlineIsOnSymmetricSide::class => [
-                'depends' => [
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInputPlaceholders::class,
-                ],
-            ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\TcaRecordTitle::class => [
                 'depends' => [
                     \TYPO3\CMS\Sites\Form\FormDataProvider\SiteTcaInline::class,
-                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInlineIsOnSymmetricSide::class,
+                    \TYPO3\CMS\Backend\Form\FormDataProvider\TcaInputPlaceholders::class,
                 ],
             ],
             \TYPO3\CMS\Backend\Form\FormDataProvider\EvaluateDisplayConditions::class => [

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 namespace TYPO3\CMS\Sites\Form\FormDataProvider;
 
 /*
@@ -14,27 +15,22 @@ namespace TYPO3\CMS\Sites\Form\FormDataProvider;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Backend\Form\Exception\DatabaseRecordException;
 use TYPO3\CMS\Backend\Form\FormDataCompiler;
 use TYPO3\CMS\Backend\Form\FormDataGroup\OnTheFly;
-use TYPO3\CMS\Backend\Form\FormDataGroup\TcaDatabaseRecord;
 use TYPO3\CMS\Backend\Form\FormDataProvider\AbstractDatabaseRecordProvider;
 use TYPO3\CMS\Backend\Form\FormDataProvider\TcaSelectItems;
 use TYPO3\CMS\Backend\Form\FormDataProviderInterface;
 use TYPO3\CMS\Backend\Form\InlineStackProcessor;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Database\RelationHandler;
-use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Messaging\FlashMessage;
-use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Versioning\VersionState;
 use TYPO3\CMS\Sites\Site\SiteFinder;
 use TYPO3\CMS\Sites\Form\FormDataGroup\SiteFormDataGroup;
 
 /**
- * Resolve and prepare inline data.
+ * Special data provider for the sites configuration module.
+ *
+ * Handle inline children of 'sys_site"
  */
 class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataProviderInterface
 {
@@ -44,7 +40,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param array $result
      * @return array
      */
-    public function addData(array $result)
+    public function addData(array $result): array
     {
         $result = $this->addInlineFirstPid($result);
         foreach ($result['processedTca']['columns'] as $fieldName => $fieldConfig) {
@@ -56,14 +52,11 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
             if ($childTableName !== 'sys_site_errorhandling' && !$this->isUserAllowedToModify($fieldConfig)) {
                 continue;
             }
-            if ($childTableName === 'sys_site_errorhandling'
-                || $childTableName === 'sys_site_language'
-            ) {
+            if ($childTableName === 'sys_site_errorhandling' || $childTableName === 'sys_site_language') {
                 $result = $this->resolveSiteRelatedChildren($result, $fieldName);
                 $result = $this->addForeignSelectorAndUniquePossibleRecords($result, $fieldName);
-            } elseif ($result['inlineResolveExistingChildren']) {
-                $result = $this->resolveRelatedRecords($result, $fieldName);
-                $result = $this->addForeignSelectorAndUniquePossibleRecords($result, $fieldName);
+            } else {
+                throw new \RuntimeException('Inline relation to other tables not implemented', 1522494737);
             }
         }
 
@@ -76,7 +69,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param array $fieldConfig
      * @return bool
      */
-    protected function isInlineField($fieldConfig)
+    protected function isInlineField($fieldConfig): bool
     {
         return !empty($fieldConfig['config']['type']) && $fieldConfig['config']['type'] === 'inline';
     }
@@ -87,7 +80,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param array $fieldConfig
      * @return bool
      */
-    protected function isUserAllowedToModify($fieldConfig)
+    protected function isUserAllowedToModify($fieldConfig): bool
     {
         return $this->getBackendUser()->check('tables_modify', $fieldConfig['config']['foreign_table']);
     }
@@ -100,7 +93,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @return array Modified result
      * @todo: Find out when and if this is different from 'effectivePid'
      */
-    protected function addInlineFirstPid(array $result)
+    protected function addInlineFirstPid(array $result): array
     {
         if ($result['inlineFirstPid'] === null) {
             $table = $result['tableName'];
@@ -132,7 +125,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param string $fieldName Current handle field name
      * @return array Modified item array
      */
-    protected function resolveSiteRelatedChildren(array $result, $fieldName)
+    protected function resolveSiteRelatedChildren(array $result, $fieldName): array
     {
         $connectedUids = [];
         if ($result['command'] === 'edit') {
@@ -157,7 +150,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
         $result['databaseRow'][$fieldName] = implode(',', $connectedUids);
         if ($result['inlineCompileExistingChildren']) {
             foreach ($connectedUids as $uid) {
-                if (strpos($uid, 'NEW') !== 0) {
+                if (strpos((string)$uid, 'NEW') !== 0) {
                     $compiledChild = $this->compileChild($result, $fieldName, $uid);
                     $result['processedTca']['columns'][$fieldName]['children'][] = $compiledChild;
                 }
@@ -185,93 +178,6 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
     }
 
     /**
-     * Substitute the value in databaseRow of this inline field with an array
-     * that contains the databaseRows of currently connected records and some meta information.
-     *
-     * @param array $result Result array
-     * @param string $fieldName Current handle field name
-     * @return array Modified item array
-     */
-    protected function resolveRelatedRecords(array $result, $fieldName)
-    {
-        $childTableName = $result['processedTca']['columns'][$fieldName]['config']['foreign_table'];
-
-        $connectedUidsOfLocalizedOverlay = [];
-        if ($result['command'] === 'edit') {
-            $connectedUidsOfLocalizedOverlay = $this->resolveConnectedRecordUids(
-                $result['processedTca']['columns'][$fieldName]['config'],
-                $result['tableName'],
-                $result['databaseRow']['uid'],
-                $result['databaseRow'][$fieldName]
-            );
-        }
-        $result['databaseRow'][$fieldName] = implode(',', $connectedUidsOfLocalizedOverlay);
-        if ($result['inlineCompileExistingChildren']) {
-            $tableNameWithDefaultRecords = $result['tableName'];
-            $connectedUidsOfDefaultLanguageRecord = $this->resolveConnectedRecordUids(
-                $result['processedTca']['columns'][$fieldName]['config'],
-                $tableNameWithDefaultRecords,
-                $result['defaultLanguageRow']['uid'],
-                $result['defaultLanguageRow'][$fieldName]
-            );
-
-            $showPossible = $result['processedTca']['columns'][$fieldName]['config']['appearance']['showPossibleLocalizationRecords'];
-
-            // Find which records are localized, which records are not localized and which are
-            // localized but miss default language record
-            $fieldNameWithDefaultLanguageUid = $GLOBALS['TCA'][$childTableName]['ctrl']['transOrigPointerField'];
-            foreach ($connectedUidsOfLocalizedOverlay as $localizedUid) {
-                try {
-                    $localizedRecord = $this->getRecordFromDatabase($childTableName, $localizedUid);
-                } catch (DatabaseRecordException $e) {
-                    // The child could not be compiled, probably it was deleted and a dangling mm record exists
-                    $this->logger->warning(
-                        $e->getMessage(),
-                        [
-                            'table' => $childTableName,
-                            'uid' => $localizedUid,
-                            'exception' => $e
-                        ]
-                    );
-                    continue;
-                }
-                $uidOfDefaultLanguageRecord = $localizedRecord[$fieldNameWithDefaultLanguageUid];
-                if (in_array($uidOfDefaultLanguageRecord, $connectedUidsOfDefaultLanguageRecord)) {
-                    // This localized child has a default language record. Remove this record from list of default language records
-                    $connectedUidsOfDefaultLanguageRecord = array_diff($connectedUidsOfDefaultLanguageRecord, [$uidOfDefaultLanguageRecord]);
-                }
-                // Compile localized record
-                $compiledChild = $this->compileChild($result, $fieldName, $localizedUid);
-                $result['processedTca']['columns'][$fieldName]['children'][] = $compiledChild;
-            }
-            if ($showPossible) {
-                foreach ($connectedUidsOfDefaultLanguageRecord as $defaultLanguageUid) {
-                    // If there are still uids in $connectedUidsOfDefaultLanguageRecord, these are records that
-                    // exist in default language, but are not localized yet. Compile and mark those
-                    try {
-                        $compiledChild = $this->compileChild($result, $fieldName, $defaultLanguageUid);
-                    } catch (DatabaseRecordException $e) {
-                        // The child could not be compiled, probably it was deleted and a dangling mm record exists
-                        $this->logger->warning(
-                            $e->getMessage(),
-                            [
-                                'table' => $childTableName,
-                                'uid' => $localizedUid,
-                                'exception' => $e
-                            ]
-                        );
-                        continue;
-                    }
-                    $compiledChild['isInlineDefaultLanguageRecordInLocalizedParentContext'] = true;
-                    $result['processedTca']['columns'][$fieldName]['children'][] = $compiledChild;
-                }
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * If there is a foreign_selector or foreign_unique configuration, fetch
      * the list of possible records that can be connected and attach them to the
      * inline configuration.
@@ -280,7 +186,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param string $fieldName Current handle field name
      * @return array Modified item array
      */
-    protected function addForeignSelectorAndUniquePossibleRecords(array $result, $fieldName)
+    protected function addForeignSelectorAndUniquePossibleRecords(array $result, $fieldName): array
     {
         if (!is_array($result['processedTca']['columns'][$fieldName]['config']['selectorOrUniqueConfiguration'])) {
             return $result;
@@ -330,7 +236,7 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
      * @param int $childUid Uid of child to compile
      * @return array Full result array
      */
-    protected function compileChild(array $result, $parentFieldName, $childUid)
+    protected function compileChild(array $result, $parentFieldName, $childUid): array
     {
         $parentConfig = $result['processedTca']['columns'][$parentFieldName]['config'];
         $childTableName = $parentConfig['foreign_table'];
@@ -367,30 +273,10 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
             'inlineTopMostParentFieldName' => $result['inlineTopMostParentFieldName'] ?: $inlineTopMostParent['field'],
         ];
 
-        // For foreign_selector with useCombination $mainChild is the mm record
-        // and $combinationChild is the child-child. For 1:n "normal" relations,
-        // $mainChild is just the normal child record and $combinationChild is empty.
-        $mainChild = $formDataCompiler->compile($formDataCompilerInput);
         if ($parentConfig['foreign_selector'] && $parentConfig['appearance']['useCombination']) {
-            try {
-                $mainChild['combinationChild'] = $this->compileChildChild($mainChild, $parentConfig);
-            } catch (DatabaseRecordException $e) {
-                // The child could not be compiled, probably it was deleted and a dangling mm record
-                // exists. This is a data inconsistency, we catch this exception and create a flash message
-                $message = vsprintf(
-                    $this->getLanguageService()->sL('LLL:EXT:backend/Resources/Private/Language/locallang.xlf:formEngine.databaseRecordErrorInlineChildChild'),
-                    [$e->getTableName(), $e->getUid(), $childTableName, (int)$childUid]
-                );
-                $flashMessage = GeneralUtility::makeInstance(
-                    FlashMessage::class,
-                    $message,
-                    '',
-                    FlashMessage::ERROR
-                );
-                GeneralUtility::makeInstance(FlashMessageService::class)->getMessageQueueByIdentifier()->enqueue($flashMessage);
-            }
+            throw new \RuntimeException('useCombination not implemented in sites module', 1522493097);
         }
-        return $mainChild;
+        return $formDataCompiler->compile($formDataCompilerInput);
     }
 
     /**
@@ -431,138 +317,10 @@ class SiteTcaInline extends AbstractDatabaseRecordProvider implements FormDataPr
     }
 
     /**
-     * With useCombination set, not only content of the intermediate table, but also
-     * the connected child should be rendered in one go. Prepare this here.
-     *
-     * @param array $child Full data array of "mm" record
-     * @param array $parentConfig TCA configuration of "parent"
-     * @return array Full data array of child
-     */
-    protected function compileChildChild(array $child, array $parentConfig)
-    {
-        // foreign_selector on intermediate is probably type=select, so data provider of this table resolved that to the uid already
-        $childChildUid = $child['databaseRow'][$parentConfig['foreign_selector']][0];
-        // child-child table name is set in child tca "the selector field" foreign_table
-        $childChildTableName = $child['processedTca']['columns'][$parentConfig['foreign_selector']]['config']['foreign_table'];
-        /** @var TcaDatabaseRecord $formDataGroup */
-        $formDataGroup = GeneralUtility::makeInstance(TcaDatabaseRecord::class);
-        /** @var FormDataCompiler $formDataCompiler */
-        $formDataCompiler = GeneralUtility::makeInstance(FormDataCompiler::class, $formDataGroup);
-
-        $formDataCompilerInput = [
-            'command' => 'edit',
-            'tableName' => $childChildTableName,
-            'vanillaUid' => (int)$childChildUid,
-            'isInlineChild' => true,
-            'isInlineChildExpanded' => $child['isInlineChildExpanded'],
-            // @todo: this is the wrong inline structure, isn't it? Shouldn't it contain the part from child child, too?
-            'inlineStructure' => $child['inlineStructure'],
-            'inlineFirstPid' => $child['inlineFirstPid'],
-            // values of the top most parent element set on first level and not overridden on following levels
-            'inlineTopMostParentUid' => $child['inlineTopMostParentUid'],
-            'inlineTopMostParentTableName' => $child['inlineTopMostParentTableName'],
-            'inlineTopMostParentFieldName' => $child['inlineTopMostParentFieldName'],
-        ];
-        $childChild = $formDataCompiler->compile($formDataCompilerInput);
-        return $childChild;
-    }
-
-    /**
-     * Substitute given list of uids in child table with workspace uid if needed
-     *
-     * @param array $connectedUids List of connected uids
-     * @param string $childTableName Name of child table
-     * @return array List of uids in workspace
-     */
-    protected function getWorkspacedUids(array $connectedUids, $childTableName)
-    {
-        $backendUser = $this->getBackendUser();
-        $newConnectedUids = [];
-        foreach ($connectedUids as $uid) {
-            // Fetch workspace version of a record (if any):
-            // @todo: Needs handling
-            if ($backendUser->workspace !== 0 && BackendUtility::isTableWorkspaceEnabled($childTableName)) {
-                $workspaceVersion = BackendUtility::getWorkspaceVersionOfRecord($backendUser->workspace, $childTableName, $uid, 'uid,t3ver_state');
-                if (!empty($workspaceVersion)) {
-                    $versionState = VersionState::cast($workspaceVersion['t3ver_state']);
-                    if ($versionState->equals(VersionState::DELETE_PLACEHOLDER)) {
-                        continue;
-                    }
-                    $uid = $workspaceVersion['uid'];
-                }
-            }
-            $newConnectedUids[] = $uid;
-        }
-        return $newConnectedUids;
-    }
-
-    /**
-     * Use RelationHandler to resolve connected uids.
-     *
-     * @param array $parentConfig TCA config section of parent
-     * @param string $parentTableName Name of parent table
-     * @param string $parentUid Uid of parent record
-     * @param string $parentFieldValue Database value of parent record of this inline field
-     * @return array Array with connected uids
-     * @todo: Cover with unit tests
-     */
-    protected function resolveConnectedRecordUids(array $parentConfig, $parentTableName, $parentUid, $parentFieldValue)
-    {
-        $directlyConnectedIds = GeneralUtility::trimExplode(',', $parentFieldValue);
-        if (empty($parentConfig['MM'])) {
-            $parentUid = $this->getLiveDefaultId($parentTableName, $parentUid);
-        }
-        /** @var RelationHandler $relationHandler */
-        $relationHandler = GeneralUtility::makeInstance(RelationHandler::class);
-        $relationHandler->registerNonTableValues = (bool)$parentConfig['allowedIdValues'];
-        $relationHandler->start($parentFieldValue, $parentConfig['foreign_table'], $parentConfig['MM'], $parentUid, $parentTableName, $parentConfig);
-        $foreignRecordUids = $relationHandler->getValueArray();
-        $resolvedForeignRecordUids = [];
-        foreach ($foreignRecordUids as $aForeignRecordUid) {
-            if ($parentConfig['MM'] || $parentConfig['foreign_field']) {
-                $resolvedForeignRecordUids[] = (int)$aForeignRecordUid;
-            } else {
-                foreach ($directlyConnectedIds as $id) {
-                    if ((int)$aForeignRecordUid === (int)$id) {
-                        $resolvedForeignRecordUids[] = (int)$aForeignRecordUid;
-                    }
-                }
-            }
-        }
-        return $resolvedForeignRecordUids;
-    }
-
-    /**
-     * Gets the record uid of the live default record. If already
-     * pointing to the live record, the submitted record uid is returned.
-     *
-     * @param string $tableName
-     * @param int $uid
-     * @return int
-     * @todo: the workspace mess still must be resolved somehow
-     */
-    protected function getLiveDefaultId($tableName, $uid)
-    {
-        $liveDefaultId = BackendUtility::getLiveVersionIdOfRecord($tableName, $uid);
-        if ($liveDefaultId === null) {
-            $liveDefaultId = $uid;
-        }
-        return $liveDefaultId;
-    }
-
-    /**
      * @return BackendUserAuthentication
      */
-    protected function getBackendUser()
+    protected function getBackendUser(): BackendUserAuthentication
     {
         return $GLOBALS['BE_USER'];
-    }
-
-    /**
-     * @return LanguageService
-     */
-    protected function getLanguageService()
-    {
-        return $GLOBALS['LANG'];
     }
 }

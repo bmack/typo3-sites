@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 namespace TYPO3\CMS\Sites\Form\FormDataProvider;
 
 /*
@@ -20,6 +21,8 @@ use TYPO3\CMS\Core\Service\IsoCodeService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
+ * Special data provider for the sites configuration module.
+ *
  * Resolve some specialities of the "site configuration"
  */
 class SiteTcaSelectItems implements FormDataProviderInterface
@@ -32,7 +35,7 @@ class SiteTcaSelectItems implements FormDataProviderInterface
      * @return array
      * @throws \UnexpectedValueException
      */
-    public function addData(array $result)
+    public function addData(array $result): array
     {
         $table = $result['tableName'];
         if ($table !== 'sys_site_language') {
