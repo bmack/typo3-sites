@@ -23,26 +23,13 @@ use TYPO3\CMS\Sites\Site\SiteFinder;
 
 /**
  * Hooks in the viewOnClick() logic in the TYPO3 Backend.
- * If a link to a page is found, where a site is configured, the site handling is used to generate the frontend
- * Link.
+ * If a link to a page is found, where a site is configured, the site handling is used to generate the frontend link.
  */
 class BackendUriGenerationHook implements SingletonInterface
 {
     /**
-     * @var SiteFinder
-     */
-    protected $siteFinder;
-
-    /**
-     * BackendUriGenerationHook constructor.
-     */
-    public function __construct()
-    {
-        $this->siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
-    }
-
-    /**
      * Post process Uri generation hook
+     *
      * @param $previewUrl
      * @param $pageUid
      * @param $rootLine
@@ -54,10 +41,11 @@ class BackendUriGenerationHook implements SingletonInterface
      */
     public function postProcess($previewUrl, $pageUid, $rootLine, $anchorSection, $viewScript, $additionalGetVars, $switchFocus): string
     {
+        $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
         // Check if the page (= its rootline) has a site attached, otherwise just keep the URL as is
         $rootLine = $rootLine ?? BackendUtility::BEgetRootLine($pageUid);
         try {
-            $site = $this->siteFinder->getSiteByPageId((int)$pageUid, $rootLine);
+            $site = $siteFinder->getSiteByPageId((int)$pageUid, $rootLine);
             // Create a multi-dimensional array out of the additional get vars
             $additionalGetVars = GeneralUtility::explodeUrl2Array($additionalGetVars, true);
             $uriBuilder = GeneralUtility::makeInstance(PageUriBuilder::class);

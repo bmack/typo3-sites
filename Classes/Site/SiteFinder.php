@@ -24,7 +24,7 @@ use TYPO3\CMS\Sites\Site\Entity\Site;
 use TYPO3\CMS\Sites\Site\Entity\SiteLanguage;
 
 /**
- * Is used for all places where to read / identify sites and site languages.
+ * Is used in backend and frontend for all places where to read / identify sites and site languages.
  */
 class SiteFinder
 {
@@ -34,7 +34,8 @@ class SiteFinder
     protected $sites;
 
     /**
-     * short-hand to quickly fetch a site based on a rootPageId
+     * Short-hand to quickly fetch a site based on a rootPageId
+     *
      * @var array
      */
     protected $mappingRootPageIdToIdentifier = [];
@@ -53,6 +54,8 @@ class SiteFinder
     }
 
     /**
+     * Return a list of all configured sites
+     *
      * @return Site[]
      */
     public function getAllSites(): array
@@ -60,7 +63,12 @@ class SiteFinder
         return $this->sites;
     }
 
-    public function getBaseUris()
+    /**
+     * Get a list of all configured base uris of all sites
+     *
+     * @return array
+     */
+    public function getBaseUris(): array
     {
         $baseUrls = [];
         foreach ($this->sites as $site) {
@@ -91,6 +99,8 @@ class SiteFinder
     }
 
     /**
+     * Get a site language by given base URI
+     *
      * @param string $uri
      * @return mixed|null
      */
@@ -127,6 +137,7 @@ class SiteFinder
      * @param int $pageId
      * @param array $alternativeRootLine
      * @return Site
+     * @throws SiteNotFoundException
      */
     public function getSiteByPageId(int $pageId, array $alternativeRootLine = null): Site
     {
@@ -141,7 +152,7 @@ class SiteFinder
                 }
             }
         }
-        // Do your own rootline traversing
+        // Do your own root line traversing
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('pages');
         $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
         $queryBuilder->select('pid')->from('pages');
@@ -157,6 +168,6 @@ class SiteFinder
                 $rootLinePageId = (int)$queryBuilder->execute()->fetchColumn(0);
             }
         }
-        throw new SiteNotFoundException('No site found in rootline of page  ' . $pageId, 1521716622);
+        throw new SiteNotFoundException('No site found in root line of page  ' . $pageId, 1521716622);
     }
 }

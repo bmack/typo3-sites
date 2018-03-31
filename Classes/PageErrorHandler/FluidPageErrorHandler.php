@@ -22,7 +22,8 @@ use TYPO3Fluid\Fluid\View\TemplateView;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
- *
+ * An error handler that renders a fluid template.
+ * This is typically configured via the "Sites configuration" module in the backend.
  */
 class FluidPageErrorHandler implements PageErrorHandlerInterface
 {

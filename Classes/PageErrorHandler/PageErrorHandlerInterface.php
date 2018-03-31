@@ -1,4 +1,5 @@
 <?php
+declare(strict_types = 1);
 namespace TYPO3\CMS\Sites\PageErrorHandler;
 
 /*
@@ -18,7 +19,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * Interface - should be implemented by all custom PHP-related Page Error Handlers
+ * Page error handler interface
+ * Should be implemented by all custom PHP-related Page Error Handlers.
  */
 interface PageErrorHandlerInterface
 {

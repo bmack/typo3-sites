@@ -21,6 +21,7 @@ use TYPO3\CMS\Core\Http\HtmlResponse;
 
 /**
  * Renders the content of a page to be displayed (also in relation to language etc)
+ * This is typically configured via the "Sites configuration" module in the backend.
  */
 class PageContentErrorHandler implements PageErrorHandlerInterface
 {

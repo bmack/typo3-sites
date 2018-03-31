@@ -21,7 +21,7 @@ use TYPO3\CMS\Sites\PageErrorHandler\PageContentErrorHandler;
 use TYPO3\CMS\Sites\PageErrorHandler\PageErrorHandlerInterface;
 
 /**
- * Entity representing a single Site with available languages
+ * Entity representing a single site with available languages
  */
 class Site
 {
@@ -96,8 +96,7 @@ class Site
                 $languageConfiguration
             );
         }
-        foreach ($configuration['errorHandling'] ?? [] as $errorHandlingConfiguration)
-        {
+        foreach ($configuration['errorHandling'] ?? [] as $errorHandlingConfiguration) {
             $code = $errorHandlingConfiguration['errorCode'];
             unset($errorHandlingConfiguration['errorCode']);
             $this->errorHandlers[(int)$code] = $errorHandlingConfiguration;
@@ -161,6 +160,7 @@ class Site
      *
      * @param int $type
      * @return PageErrorHandlerInterface
+     * @throws \RuntimeException
      */
     public function getErrorHandler(int $type): PageErrorHandlerInterface
     {
@@ -178,6 +178,7 @@ class Site
                 }
                 return $handler;
         }
+        throw new \RuntimeException('Not implemented', 1522495914);
     }
 
     /**
@@ -195,12 +196,16 @@ class Site
      *
      * @param string $attributeName
      * @return mixed
+     * @throws \InvalidArgumentException
      */
     public function getAttribute(string $attributeName)
     {
         if (isset($this->configuration[$attributeName])) {
             return $this->configuration[$attributeName];
         }
-        throw new \InvalidArgumentException('Attribute ' . $attributeName . ' does not exist on site ' . $this->identifier . '.');
+        throw new \InvalidArgumentException(
+            'Attribute ' . $attributeName . ' does not exist on site ' . $this->identifier . '.',
+            1522495954
+        );
     }
 }
