@@ -20,6 +20,8 @@ use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
+ * Helper class for the backend "Sites" module
+ *
  * Load Site configuration TCA from ext:*Configuration/SiteConfigurationTCA
  * and ext:*Configuration/SiteConfigurationTCA/Overrides
  */

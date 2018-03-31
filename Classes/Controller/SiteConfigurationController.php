@@ -44,13 +44,13 @@ use TYPO3\CMS\Sites\Exception\SiteNotFoundException;
 use TYPO3Fluid\Fluid\View\ViewInterface;
 
 /**
- * Lists all site root pages, and allows to configure a configuration for a site.
+ * Backend controller: The "Site management" -> "Sites" module
+ *
+ * List all site root pages, CRUD site configuration.
  */
 class SiteConfigurationController
 {
     /**
-     * ModuleTemplate object
-     *
      * @var ModuleTemplate
      */
     protected $moduleTemplate;
@@ -65,24 +65,26 @@ class SiteConfigurationController
      */
     protected $siteFinder;
 
+    /**
+     * Default constructor
+     */
     public function __construct()
     {
         $this->siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
+        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
     }
 
     /**
-     * Main entry method dispatches to other actions - those method names that end with "Action".
+     * Main entry method: Dispatch to other actions - those method names that end with "Action".
      *
      * @param ServerRequestInterface $request the current request
      * @return ResponseInterface the response with the content
      */
     public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
-        $this->moduleTemplate = GeneralUtility::makeInstance(ModuleTemplate::class);
         $this->moduleTemplate->getPageRenderer()->loadRequireJsModule('TYPO3/CMS/Backend/ContextMenu');
         $action = $request->getQueryParams()['action'] ?? $request->getParsedBody()['action'] ?? 'overview';
         $this->initializeView($action);
-
         $result = call_user_func_array([$this, $action . 'Action'], [$request]);
         if ($result instanceof ResponseInterface) {
             return $result;
@@ -92,12 +94,12 @@ class SiteConfigurationController
     }
 
     /**
-     * Show all possible pages where a site configuration can be put, as well as all site configurations
+     * List pages that have 'is_siteroot' flag set - those that have the globe icon in page tree.
+     * Link to Add / Edit / Delete for each.
      */
-    protected function overviewAction()
+    protected function overviewAction(): void
     {
         $this->configureOverViewDocHeader();
-        $unmappedSiteConfiguration = [];
         /** @var Site[] $allSites */
         $allSites = $this->siteFinder->getAllSites();
         $pages = $this->getAllSitePages();
@@ -106,12 +108,8 @@ class SiteConfigurationController
             if (isset($pages[$rootPageId])) {
                 $pages[$rootPageId]['siteIdentifier'] = $identifier;
                 $pages[$rootPageId]['siteConfiguration'] = $site;
-            } else {
-                // @todo unused in view
-                $unmappedSiteConfiguration[$identifier] = $site;
             }
         }
-        $this->view->assign('unmappedSiteConfiguration', $unmappedSiteConfiguration);
         $this->view->assign('pages', $pages);
     }
 
@@ -119,12 +117,13 @@ class SiteConfigurationController
      * Shows a form to create a new site configuration, or edit an existing one.
      *
      * @param $request ServerRequestInterface
+     * @throws \RuntimeException
      */
-    protected function editAction(ServerRequestInterface $request)
+    protected function editAction(ServerRequestInterface $request): void
     {
         $this->configureEditViewDocHeader();
 
-        // Brings "our" sys_site and friends TCA into global TCA
+        // Put sys_site and friends TCA into global TCA
         // @todo: We might be able to get rid of that later
         $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
 
@@ -182,9 +181,14 @@ class SiteConfigurationController
      *
      * @param ServerRequestInterface $request
      * @return ResponseInterface
+     * @throws \RuntimeException
      */
     protected function saveAction(ServerRequestInterface $request): ResponseInterface
     {
+        // Put sys_site and friends TCA into global TCA
+        // @todo: We might be able to get rid of that later
+        $GLOBALS['TCA'] = array_merge($GLOBALS['TCA'], GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca());
+
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $siteTca = GeneralUtility::makeInstance(SiteTcaConfiguration::class)->getTca();
 
@@ -205,7 +209,7 @@ class SiteConfigurationController
         }
 
         $data = $parsedBody['data'];
-        // This can be NEW... for new records
+        // This can be NEW123 for new records
         $pageId = (int)key($data['sys_site']);
         $sysSiteRow = current($data['sys_site']);
         $siteIdentifier = $sysSiteRow['identifier'] ?? '';
@@ -282,17 +286,17 @@ class SiteConfigurationController
             $newSysSiteData = $this->validateFullStructure($newSysSiteData);
 
             if (!$isNewConfiguration && $currentIdentifier !== $siteIdentifier) {
-                // @todo error handling / mkdir-deep?
-                rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+                $result = rename(PATH_site . 'typo3conf/sites/' . $currentIdentifier, PATH_site . 'typo3conf/sites/' . $siteIdentifier);
+                if (!$result) {
+                    throw new \RuntimeException('Unabled to rename directory ' . PATH_site . 'typo3conf/sites/' . $currentIdentifier, 1522491300);
+                }
             } elseif ($isNewConfiguration) {
-                // @todo error handling
                 GeneralUtility::mkdir_deep(PATH_site . 'typo3conf/sites/' . $siteIdentifier);
             }
-            // @todo error handling
             $yaml = Yaml::dump($newSysSiteData, 99, 2);
             GeneralUtility::writeFile(PATH_site . 'typo3conf/sites/' . $siteIdentifier . '/config.yaml', $yaml);
         } catch (SiteValidationErrorException $e) {
-            // Do not store new config if a validation error is thrown
+            // Do not store new config if a validation error is thrown, but redirect only to show a generated flash message
         }
 
         $saveRoute = $uriBuilder->buildUriFromRoute('site_configuration', ['action' => 'edit', 'site' => $siteIdentifier]);
@@ -354,7 +358,7 @@ class SiteConfigurationController
                     $defaultFlashMessageQueue->enqueue($flashMessage);
                 }
             } catch (SiteNotFoundException $e) {
-                // User is renaming identifier which does not exist yet. Thas is ok
+                // User is renaming identifier which does not exist yet. That's ok
             }
         }
         return $identifier;
@@ -363,47 +367,58 @@ class SiteConfigurationController
     /**
      * Simple validation and processing method for incoming form field values.
      *
-     * Note this does not support all "eval" options but only what we really need.
+     * Note this does not support all TCA "eval" options but only what we really need.
      *
      * @param string $tableName Table name
      * @param string $fieldName Field name
      * @param mixed $fieldValue Incoming value from FormEngine
      * @return mixed Verified / modified value
      * @throws SiteValidationErrorException
+     * @throws \RuntimeException
      */
     protected function validateAndProcessValue(string $tableName, string $fieldName, $fieldValue)
     {
         $fieldConfig = $GLOBALS['TCA'][$tableName]['columns'][$fieldName]['config'];
-        // @todo: find out if there is an unhandled 'eval' and throw if so to avoid not implemented evals
+        $handledEvals = [];
         if (!empty($fieldConfig['eval'])) {
             $evalArray = GeneralUtility::trimExplode(',', $fieldConfig['eval'], true);
             // Processing
             if (in_array('alphanum_x', $evalArray, true)) {
+                $handledEvals[] = 'alphanum_x';
                 $fieldValue = preg_replace('/[^a-zA-Z0-9_-]/', '', $fieldValue);
             }
             if (in_array('lower', $evalArray, true)) {
+                $handledEvals[] = 'lower';
                 $fieldValue = mb_strtolower($fieldValue, 'utf-8');
             }
             if (in_array('trim', $evalArray, true)) {
+                $handledEvals[] = 'trim';
                 $fieldValue = trim($fieldValue);
             }
             if (in_array('int', $evalArray, true)) {
+                $handledEvals[] = 'int';
                 $fieldValue = (int)$fieldValue;
             }
             // Validation throws - these should be handled client side already,
             // eg. 'required' being set and receiving empty, shouldn't happen server side
-            if (in_array('required', $evalArray, true) && empty($fieldValue)) {
-                // @todo localize
-                $message = 'Field ' . $fieldName . ' is a required field, but no value has been provided.';
-                $messageTitle = 'Site configuration not saved';
-                $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
-                $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
-                $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
-                $defaultFlashMessageQueue->enqueue($flashMessage);
-                throw new SiteValidationErrorException(
-                    'Field ' . $fieldName . ' is set to required, but received empty.',
-                    1521726421
-                );
+            if (in_array('required', $evalArray, true)) {
+                $handledEvals[] = 'required';
+                if (empty($fieldValue)) {
+                    // @todo localize
+                    $message = 'Field ' . $fieldName . ' is a required field, but no value has been provided.';
+                    $messageTitle = 'Site configuration not saved';
+                    $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
+                    $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+                    $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
+                    $defaultFlashMessageQueue->enqueue($flashMessage);
+                    throw new SiteValidationErrorException(
+                        'Field ' . $fieldName . ' is set to required, but received empty.',
+                        1521726421
+                    );
+                }
+            }
+            if (!empty(array_diff($evalArray, $handledEvals))) {
+                throw new \RuntimeException('At least one not implemented \'eval\' in list ' . $fieldConfig['eval'], 1522491734);
             }
         }
         if (isset($fieldConfig['range']['lower'])) {
@@ -438,7 +453,7 @@ class SiteConfigurationController
                     $validChildren[] = $child;
                 } else {
                     // @todo localize
-                    $message = 'Two error handler configurations for error code ' . $child['errorCode'] . ' fonud.'
+                    $message = 'Two error handler configurations for error code ' . $child['errorCode'] . ' found.'
                         . ' This would be an invalid configuration, the dangling one has been removed.';
                     $messageTitle = 'Duplicate error code removed.';
                     $flashMessage = GeneralUtility::makeInstance(FlashMessage::class, $message, $messageTitle, FlashMessage::WARNING, true);
@@ -568,6 +583,8 @@ class SiteConfigurationController
     }
 
     /**
+     * Returns a list of pages that have 'is_siteroot' set
+     *
      * @return array
      */
     protected function getAllSitePages(): array
